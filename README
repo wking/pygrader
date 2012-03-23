@@ -127,14 +127,7 @@ encrypt messages to that person and sign messages from that person
 with PGP_.  It will also be used to authenticate ownership of incoming
 emails.  You'll need to have GnuPG_ on your local host for this to
 work, and the user running pygrader should have the associated keys in
-their keychain.  The ``pgp-fingerprint`` option is used when verifying
-that signed emails are signed by the appropriate person.  You can
-extract the fingerprint for the PGP key using GnuPG::
-
-  $ gpg --fingerprint 4332B6E3
-  pub   2048R/4332B6E3 2012-03-21
-        Key fingerprint = B2ED BE0E 771A 4B87 08DD  16A7 511A EDA6 4332 B6E3
-  uid                  pgp-mime-test (http://blog.tremily.us/posts/pgp-mime/) <pgp-mime@invalid.com>
+their keychain.
 
 Processing submissions
 ----------------------
