@@ -26,6 +26,9 @@ Dependencies
 ``pygrader`` is a simple package.  The only external dependency
 outside the Python 3 standard library is my `pgp-mime`_ package.
 
+If you are developing ``pygrader``, you can use `update-copyright`_ to
+keep the copyright blurbs up to date.
+
 Installing by hand
 ------------------
 
@@ -194,6 +197,7 @@ graphical interfaces.
 .. _layman: http://layman.sourceforge.net/
 .. _wtk overlay: http://blog.tremily.us/posts/Gentoo_overlay/
 .. _pgp-mime: http://blog.tremily.us/posts/pgp-mime/
+.. _update-copyright: http://blog.tremily.us/posts/update-copyright/
 .. _Git: http://git-scm.com/
 .. _homepage: http://blog.tremily.us/posts/pygrader/
 .. _SMTP: http://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol
