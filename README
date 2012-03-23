@@ -187,9 +187,9 @@ wking@drexel.edu
 Related work
 ============
 
-For a similar project, see `Alex Heitzmann pygrade`_, which keeps the
-grade history in a single log file and provides more support for using
-graphical interfaces.
+For a similar project, see `Alex Heitzmann's pygrade`_, which keeps
+the grade history in a single log file and provides more support for
+using graphical interfaces.
 
 
 .. _PGP: http://en.wikipedia.org/wiki/Pretty_Good_Privacy
