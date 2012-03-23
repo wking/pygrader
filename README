@@ -1,0 +1,203 @@
+``pygrader`` is a directory-based grade database for grading course
+assignments.  Besides tracking grades locally, you can also use it to
+automatically mail grades to students and professors associated with
+the course.  For secure communication, PGP_ can be used to sign and/or
+encrypt any of these emails.
+
+Installation
+============
+
+Packages
+--------
+
+Gentoo
+~~~~~~
+
+I've packaged ``pygrader`` for Gentoo_.  You need layman_ and
+my `wtk overlay`_.  Install with::
+
+  # emerge -av app-portage/layman
+  # layman --add wtk
+  # emerge -av dev-python/pygrader
+
+Dependencies
+------------
+
+``pygrader`` is a simple package.  The only external dependency
+outside the Python 3 standard library is my `pgp-mime`_ package.
+
+Installing by hand
+------------------
+
+``pygrader`` is available as a Git_ repository::
+
+  $ git clone git://tremily.us/pygrader.git
+
+See the homepage_ for details.  To install the checkout, run the
+standard::
+
+  $ python setup.py install
+
+Usage
+=====
+
+Pygrader will help keep you organized in a course where the students
+submit homework via email, or the homework submissions are otherwise
+digital (i.e. scanned in after submission).  There is currently no
+support for multiple graders, although I will likely add this in the
+future.  In the following sections, I'll walk you through
+administering the homework for the ``test`` course.
+
+All of the processing involves using the ``pg.py`` command.  Run::
+
+  $ pg.py --help
+
+for details.
+
+Sending email
+-------------
+
+Pygrader receives submissions and assigns grades via email.  In order
+to send email, it needs to connect to an SMTP_ server.  See the
+pgp-mime documentation for details on configuring you SMTP connection.
+You can test your SMTP configuration by sending yourself a test
+message::
+
+  $ pg.py -VVV smtp -a rincewind@uu.edu -t rincewind@uu.edu
+
+Defining the course
+-------------------
+
+Once you've got email submission working, you need to configure the
+course you'll be grading.  Each course lives in its own directory, and
+the basic setup looks like the ``test`` example distributed with
+pygrader.  The file that you need to get started is the config file in
+the course directory::
+
+  $ cat test/course.conf
+  [course]
+  assignments: Attendance 1, Attendance 2, Attendance 3, Attendance 4,
+    Attendance 5, Attendance 6, Attendance 7, Attendance 8, Attendance 9,
+    Assignment 1, Assignment 2, Exam 1, Exam 2
+  professors: Gandalf
+  assistants: Sauron
+  students: Bilbo Baggins, Frodo Baggins, Aragorn
+
+  [Attendance 1]
+  points: 1
+  weight: 0.1/9
+  due: 2011-10-03
+
+  [Attendance 2]
+  points: 1
+  weight: 0.1/9
+  due: 2011-10-04
+
+  …
+
+  [Exam 2]
+  points: 10
+  weight: 0.4/2
+  due: 2011-10-17
+
+  [Gandalf]
+  nickname: G-Man
+  emails: g@grey.edu
+  pgp-key: 4332B6E3
+
+  [Sauron]
+  emails: eye@tower.edu
+
+  [Bilbo Baggins]
+  nickname: Bill
+  emails: bb@shire.org, bb@greyhavens.net
+
+  …
+
+The format is a bit wordy, but it is also explicit and easily
+extensible.  The time it takes to construct this configuration file
+should be a small portion of the time you will spend grading
+submissions.
+
+If a person has the ``pgp-key`` option set, that key will be used to
+encrypt messages to that person and sign messages from that person
+with PGP_.  It will also be used to authenticate ownership of incoming
+emails.  You'll need to have GnuPG_ on your local host for this to
+work, and the user running pygrader should have the associated keys in
+their keychain.  The ``pgp-fingerprint`` option is used when verifying
+that signed emails are signed by the appropriate person.  You can
+extract the fingerprint for the PGP key using GnuPG::
+
+  $ gpg --fingerprint 4332B6E3
+  pub   2048R/4332B6E3 2012-03-21
+        Key fingerprint = B2ED BE0E 771A 4B87 08DD  16A7 511A EDA6 4332 B6E3
+  uid                  pgp-mime-test (http://blog.tremily.us/posts/pgp-mime/) <pgp-mime@invalid.com>
+
+Processing submissions
+----------------------
+
+As the due date approaches, student submissions will start arriving in
+your inbox.  Use ``pg.py``'s ``mailpipe`` command to sort them into
+directories.  This will also extract any files that were attached to
+the emails and place them in that persons assignment directory::
+
+  $ pg.py -d test mailpipe -m maildir -i ~/.maildir -o ./mail-old
+
+Use ``pg.py``'s ``todo`` command to check for ungraded submissions::
+
+  $ pg.py -d test todo mail grade
+
+To see how everyone's doing, you can print a table of grades with
+``pg.py``'s ``tabulate`` command::
+
+  $ pg.py -d test tabulate -s
+
+When you want to notify students of their grades, you can send them
+all out with ``pg.py``'s ``email`` command::
+
+  $ pg.py -d test email assignment 'Exam 1'
+
+Testing
+=======
+
+Run the internal unit tests using nose_::
+
+  $ nosetests --with-doctest --doctest-tests pygrader
+
+If a Python-3-version of ``nosetests`` is not the default on your
+system, you may need to try something like::
+
+  $ nosetests-3.2 --with-doctest --doctest-tests pygrader
+
+Licence
+=======
+
+This project is distributed under the `GNU General Public License
+Version 3`_ or greater.
+
+Author
+======
+
+W. Trevor King
+wking@drexel.edu
+
+Related work
+============
+
+For a similar project, see `Alex Heitzmann pygrade`_, which keeps the
+grade history in a single log file and provides more support for using
+graphical interfaces.
+
+
+.. _PGP: http://en.wikipedia.org/wiki/Pretty_Good_Privacy
+.. _Gentoo: http://www.gentoo.org/
+.. _layman: http://layman.sourceforge.net/
+.. _wtk overlay: http://blog.tremily.us/posts/Gentoo_overlay/
+.. _pgp-mime: http://blog.tremily.us/posts/pgp-mime/
+.. _Git: http://git-scm.com/
+.. _homepage: http://blog.tremily.us/posts/pygrader/
+.. _SMTP: http://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol
+.. _GnuPG: http://www.gnupg.org/
+.. _nose: http://readthedocs.org/docs/nose/en/latest/
+.. _GNU General Public License Version 3: http://www.gnu.org/licenses/gpl.html
+.. _Alex Heitzmann's pygrade: http://code.google.com/p/pygrade/
