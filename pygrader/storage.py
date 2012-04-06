@@ -195,7 +195,7 @@ def load_person(name, data={}):
     ...           'emails': 'g@grey.edu, g@greyhavens.net',
     ...           'pgp-key': '0x0123456789ABCDEF',
     ...           })
-    >>> print('{0.name}: {0.emails}'.format(p))
+    >>> print('{0.name}: {0.emails} | {0.pgp_key}'.format(p))
     Gandalf: ['g@grey.edu', 'g@greyhavens.net'] | 0x0123456789ABCDEF
     >>> p = load_person(name='Gandalf')
     >>> print('{0.name}: {0.emails} | {0.pgp_key}'.format(p))
