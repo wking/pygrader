@@ -49,7 +49,7 @@ class Course (object):
 
         The value of ``None`` matches any person.
 
-        >>> from pygrade.model.person import Person
+        >>> from pygrader.model.person import Person
         >>> c = Course(people=[
         ...     Person(name='Bilbo Baggins',
         ...            emails=['bb@shire.org', 'bb@greyhavens.net'],
@@ -100,9 +100,9 @@ class Course (object):
     def grade(self, student, assignment):
         """Return the ``Grade`` that matches ``Student`` and ``Assignment``
 
-        >>> from pygrade.model.assignment import Assignment
-        >>> from pygrade.model.grade import Grade
-        >>> from pygrade.model.person import Person
+        >>> from pygrader.model.assignment import Assignment
+        >>> from pygrader.model.grade import Grade
+        >>> from pygrader.model.person import Person
         >>> p = Person(name='Bilbo Baggins')
         >>> a = Assignment(name='Exam 1')
         >>> g = Grade(student=p, assignment=a, points=10)
