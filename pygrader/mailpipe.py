@@ -269,7 +269,7 @@ def _get_verified_message(message, pgp_key, use_color=None):
         _LOG.warn(_color_string(
                 string='{} has an invalid signature'.format(mid), color=bad))
         pass  #return None
-    print(gpg_message)
+    _LOG.info(gpg_message)
     for k,v in message.items(): # copy over useful headers
         if k.lower() not in ['content-type',
                              'mime-version',
