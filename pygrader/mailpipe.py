@@ -27,6 +27,7 @@ import sys as _sys
 import time as _time
 
 from pgp_mime import verify as _verify
+from lxml import etree as _etree
 
 from . import LOG as _LOG
 from .color import standard_colors as _standard_colors
@@ -219,7 +220,7 @@ def _get_verified_message(message, pgp_key, use_color=None):
 
     ... and signs it (with the pgp-mime test key).
 
-    >>> signed = sign(message, sign_as='4332B6E3')
+    >>> signed = sign(message, signers=['pgp-mime-test'])
 
     As it is being delivered, the message picks up extra headers.
 
@@ -258,18 +259,36 @@ def _get_verified_message(message, pgp_key, use_color=None):
     highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
     mid = message['message-id']
     try:
-        decrypted,verified,gpg_message = _verify(message=message)
+        decrypted,verified,result = _verify(message=message)
     except (ValueError, AssertionError):
         _LOG.warn(_color_string(
                 string='could not verify {} (not signed?)'.format(mid),
                 color=bad))
         return None
-    _LOG.info(_color_string(gpg_message, color=lowlight))
-    if not verified:
+    _LOG.info(_color_string(str(result, 'utf-8'), color=lowlight))
+    tree = _etree.fromstring(result.replace(b'\x00', b''))
+    match = None
+    for signature in tree.findall('.//signature'):
+        for fingerprint in signature.iterchildren('fpr'):
+            if fingerprint.text.endswith(pgp_key):
+                match = signature
+                break
+    if match is None:
         _LOG.warn(_color_string(
-                string='{} has an invalid signature'.format(mid), color=bad))
-        pass  #return None
-    _LOG.info(gpg_message)
+                string='{} is not signed by the expected key'.format(mid),
+                color=bad))
+        return None
+    if not verified:
+        sumhex = list(signature.iterchildren('summary'))[0].get('value')
+        summary = int(sumhex, 16)
+        if summary != 0:
+            _LOG.warn(_color_string(
+                    string='{} has an unverified signature'.format(mid),
+                    color=bad))
+            return None
+        # otherwise, we may have an untrusted key.  We'll count that
+        # as verified here, because the caller is explicity looking
+        # for signatures by this fingerprint.
     for k,v in message.items(): # copy over useful headers
         if k.lower() not in ['content-type',
                              'mime-version',
