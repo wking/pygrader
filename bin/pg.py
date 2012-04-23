@@ -88,8 +88,8 @@ if __name__ == '__main__':
         '-D', '--dry-run', default=False, action='store_const', const=True,
         help="Don't actually send emails, create files, etc.")
     email_parser.add_argument(
-        '-a', '--author',  default='Trevor King',
-        help='Your name (email author)')
+        '-a', '--author',
+        help='Your name (email author), defaults to first assistant')
     email_parser.add_argument(
         '--cc', action='append', help='People to carbon copy')
     email_subparsers = email_parser.add_subparsers(title='type')
@@ -177,7 +177,11 @@ if __name__ == '__main__':
         for attr in ['author', 'student']:
             if hasattr(args, attr):
                 name = getattr(args, attr)
-                kwargs[attr] = course.person(name=name)
+                if name is None and attr == 'author':
+                    kwargs[attr] = list(
+                        course.find_people(group='assistants'))[0]
+                else:
+                    kwargs[attr] = course.person(name=name)
         for attr in ['targets']:
             if hasattr(args, attr):
                 people = getattr(args, attr)
