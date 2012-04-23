@@ -150,7 +150,7 @@ def get_address(person, header=False):
         return _email_utils.formataddr((name, person.emails[0]))
     return _email_utils.formataddr((person.name, person.emails[0]))
 
-def construct_email(author, targets, subject, text, cc=None, sign=True):
+def construct_email(author, targets, subject, text, cc=None):
     r"""Built a text/plain email using `Person` instances
 
     >>> from pygrader.model.person import Person as Person
@@ -193,8 +193,21 @@ def construct_email(author, targets, subject, text, cc=None, sign=True):
     <BLANKLINE>
     """
     msg = _pgp_mime.encodedMIMEText(text)
-    if sign and author.pgp_key:
-        msg = _pgp_mime.sign(message=msg, sign_as=author.pgp_key)
+    if author.pgp_key:
+        signers = [author.pgp_key]
+    else:
+        signers = []
+    recipients = [p.pgp_key for p in targets if p.pgp_key]
+    if signers and recipients:
+        if author.pgp_key not in recipients:
+            recipients.append(author.pgp_key)
+        msg = _pgp_mime.sign_and_encrypt(
+            message=msg, signers=signers, recipients=recipients,
+            always_trust=True)
+    elif signers:
+        msg = _pgp_mime.sign(message=msg, signers=signers)
+    elif recipients:
+        msg = _pgp_mime.encrypt(message=msg, recipients=recipients)
 
     msg['Date'] = _email_utils.formatdate()
     msg['From'] = get_address(author, header=True)
