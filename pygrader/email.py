@@ -19,6 +19,8 @@ from __future__ import absolute_import
 
 from email.header import Header as _Header
 from email.header import decode_header as _decode_header
+from email.mime.message import MIMEMessage as _MIMEMessage
+from email.mime.multipart import MIMEMultipart as _MIMEMultipart
 import email.utils as _email_utils
 import logging as _logging
 import smtplib as _smtplib
@@ -150,6 +152,52 @@ def get_address(person, header=False):
         return _email_utils.formataddr((name, person.emails[0]))
     return _email_utils.formataddr((person.name, person.emails[0]))
 
+def _construct_email(author, targets, subject, message, cc=None):
+    if author.pgp_key:
+        signers = [author.pgp_key]
+    else:
+        signers = []
+    recipients = [p.pgp_key for p in targets if p.pgp_key]
+    encrypt = True
+    for person in targets:
+        if not person.pgp_key:
+            encrypt = False  # cannot encrypt to every recipient
+            break
+    if cc:
+        recipients.extend([p.pgp_key for p in cc if p.pgp_key])
+        for person in cc:
+            if not person.pgp_key:
+                encrypt = False
+                break
+    if not recipients:
+        encrypt = False  # noone to encrypt to
+    if signers and encrypt:
+        if author.pgp_key not in recipients:
+            recipients.append(author.pgp_key)
+        message = _pgp_mime.sign_and_encrypt(
+            message=message, signers=signers, recipients=recipients,
+            always_trust=True)
+    elif signers:
+        message = _pgp_mime.sign(message=message, signers=signers)
+    elif encrypt:
+        message = _pgp_mime.encrypt(message=message, recipients=recipients)
+
+    message['Date'] = _email_utils.formatdate()
+    message['From'] = get_address(author, header=True)
+    message['Reply-to'] = message['From']
+    message['To'] = ', '.join(
+        get_address(target, header=True) for target in targets)
+    if cc:
+        message['Cc'] = ', '.join(
+            get_address(target, header=True) for target in cc)
+    subject_encoding = _pgp_mime.guess_encoding(subject)
+    if subject_encoding == 'us-ascii':
+        message['Subject'] = subject
+    else:
+        message['Subject'] = _Header(subject, subject_encoding)
+
+    return message
+
 def construct_email(author, targets, subject, text, cc=None):
     r"""Build a text/plain email using `Person` instances
 
@@ -192,35 +240,59 @@ def construct_email(author, targets, subject, text, cc=None):
     RnVua3kg4pyJLg==
     <BLANKLINE>
     """
-    msg = _pgp_mime.encodedMIMEText(text)
-    if author.pgp_key:
-        signers = [author.pgp_key]
-    else:
-        signers = []
-    recipients = [p.pgp_key for p in targets if p.pgp_key]
-    if signers and recipients:
-        if author.pgp_key not in recipients:
-            recipients.append(author.pgp_key)
-        msg = _pgp_mime.sign_and_encrypt(
-            message=msg, signers=signers, recipients=recipients,
-            always_trust=True)
-    elif signers:
-        msg = _pgp_mime.sign(message=msg, signers=signers)
-    elif recipients:
-        msg = _pgp_mime.encrypt(message=msg, recipients=recipients)
+    message = _pgp_mime.encodedMIMEText(text)
+    return _construct_email(
+        author=author, targets=targets, subject=subject, message=message,
+        cc=cc)
 
-    msg['Date'] = _email_utils.formatdate()
-    msg['From'] = get_address(author, header=True)
-    msg['Reply-to'] = msg['From']
-    msg['To'] = ', '.join(
-        get_address(target, header=True) for target in targets)
-    if cc:
-        msg['Cc'] = ', '.join(
-            get_address(target, header=True) for target in cc)
-    subject_encoding = _pgp_mime.guess_encoding(subject)
-    if subject_encoding == 'us-ascii':
-        msg['Subject'] = subject
-    else:
-        msg['Subject'] = _Header(subject, subject_encoding)
+def construct_response(author, targets, subject, text, original, cc=None):
+    r"""Build a multipart/mixed response email using `Person` instances
 
-    return msg
+    >>> from pygrader.model.person import Person as Person
+    >>> student = Person(name='Джон Доу', emails=['jdoe@a.gov.ru'])
+    >>> assistant = Person(name='Jill', emails=['c@d.net'])
+    >>> cc = [assistant]
+    >>> msg = construct_email(author=student, targets=[assistant],
+    ...     subject='Assignment 1 submission', text='Bla bla bla...')
+    >>> rsp = construct_response(author=assistant, targets=[student],
+    ...     subject='Received assignment 1 submission', text='3 hours late',
+    ...     original=msg)
+    >>> print(rsp.as_string())  # doctest: +REPORT_UDIFF, +ELLIPSIS
+    Content-Type: multipart/mixed; boundary="===============...=="
+    MIME-Version: 1.0
+    Date: ...
+    From: Jill <c@d.net>
+    Reply-to: Jill <c@d.net>
+    To: =?utf-8?b?0JTQttC+0L0g0JTQvtGD?= <jdoe@a.gov.ru>
+    Subject: Received assignment 1 submission
+    <BLANKLINE>
+    --===============...==
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    <BLANKLINE>
+    3 hours late
+    --===============...==
+    Content-Type: message/rfc822
+    MIME-Version: 1.0
+    <BLANKLINE>
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    Date: ...
+    From: =?utf-8?b?0JTQttC+0L0g0JTQvtGD?= <jdoe@a.gov.ru>
+    Reply-to: =?utf-8?b?0JTQttC+0L0g0JTQvtGD?= <jdoe@a.gov.ru>
+    To: Jill <c@d.net>
+    Subject: Assignment 1 submission
+    <BLANKLINE>
+    Bla bla bla...
+    --===============...==--
+    """
+    message = _MIMEMultipart('mixed')
+    message.attach(_pgp_mime.encodedMIMEText(text))
+    message.attach(_MIMEMessage(original))
+    return _construct_email(
+        author=author, targets=targets, subject=subject, message=message,
+        cc=cc)
