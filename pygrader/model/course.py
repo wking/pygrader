@@ -18,7 +18,8 @@ from .. import LOG as _LOG
 
 
 class Course (object):
-    def __init__(self, name=None, assignments=None, people=None, grades=None):
+    def __init__(self, name=None, assignments=None, people=None, grades=None,
+                 robot=None):
         self.name = name
         if assignments is None:
             assignments = []
@@ -29,6 +30,7 @@ class Course (object):
         if grades is None:
             grades = []
         self.grades = sorted(grades)
+        self.robot = robot
 
     def assignment(self, name):
         for assignment in self.assignments:

@@ -52,12 +52,14 @@ def load_course(basedir):
     [<pygrader.model.person.Person object at 0x...>, ...]
     >>> course.grades
     []
+    >>> print(course.robot)
+    <Person Robot101>
     """
     _LOG.debug('loading course from {}'.format(basedir))
     config = _configparser.ConfigParser()
     config.read([_os_path.join(basedir, 'course.conf')])
     name = config.get('course', 'name')
-    names = {}
+    names = {'robot': [config.get('course', 'robot').strip()]}
     for option in ['assignments', 'professors', 'assistants', 'students']:
         names[option] = [
         a.strip() for a in config.get('course', option).split(',')]
@@ -67,7 +69,7 @@ def load_course(basedir):
         assignments.append(load_assignment(
                 name=assignment, data=dict(config.items(assignment))))
     people = {}
-    for group in ['professors', 'assistants', 'students']:
+    for group in ['robot', 'professors', 'assistants', 'students']:
         for person in names[group]:
             if person in people:
                 _LOG.debug('adding person {} to group {}'.format(
@@ -80,9 +82,11 @@ def load_course(basedir):
                     name=person, data=dict(config.items(person)))
                 people[person].groups = [group]
     people = people.values()
+    robot = [p for p in people if 'robot' in p.groups][0]
     grades = list(load_grades(basedir, assignments, people))
     return _Course(
-        name=name, assignments=assignments, people=people, grades=grades)
+        name=name, assignments=assignments, people=people, grades=grades,
+        robot=robot)
 
 def parse_date(string):
     """Parse dates given using the W3C DTF profile of ISO 8601.
