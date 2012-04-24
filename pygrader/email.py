@@ -151,7 +151,7 @@ def get_address(person, header=False):
     return _email_utils.formataddr((person.name, person.emails[0]))
 
 def construct_email(author, targets, subject, text, cc=None):
-    r"""Built a text/plain email using `Person` instances
+    r"""Build a text/plain email using `Person` instances
 
     >>> from pygrader.model.person import Person as Person
     >>> author = Person(name='Джон Доу', emails=['jdoe@a.gov.ru'])
