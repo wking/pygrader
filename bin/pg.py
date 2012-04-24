@@ -32,6 +32,7 @@ import pgp_mime as _pgp_mime
 from pygrader import __version__
 from pygrader import LOG as _LOG
 from pygrader.email import test_smtp as _test_smtp
+from pygrader.email import Responder as _Responder
 from pygrader.mailpipe import mailpipe as _mailpipe
 from pygrader.storage import initialize as _initialize
 from pygrader.storage import load_course as _load_course
@@ -137,6 +138,10 @@ if __name__ == '__main__':
         '-l', '--max-late', default=0, type=float,
         help=('Grace period in seconds before an incoming assignment is '
               'actually marked as late'))
+    mailpipe_parser.add_argument(
+        '-r', '--respond', default=False, action='store_const', const=True,
+        help=('Send automatic response emails to acknowledge incomming '
+              'messages.'))
 
     todo_parser = subparsers.add_parser(
         'todo', help=_todo.__doc__.splitlines()[0])
@@ -214,6 +219,12 @@ if __name__ == '__main__':
         params = _pgp_mime.get_smtp_params(config)
         kwargs['smtp'] = _pgp_mime.get_smtp(*params)
         del params
+
+    if hasattr(args, 'respond') and getattr(args, 'respond'):
+        kwargs['respond'] = _Responder(
+            smtp=kwargs.get('smtp', None),
+            use_color=kwargs.get('use_color', False),
+            dry_run=kwargs.get('dry_run', False))
 
     _LOG.debug('execute {} with {}'.format(args.func, kwargs))
     try:

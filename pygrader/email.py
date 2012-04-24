@@ -111,6 +111,18 @@ def send_emails(emails, smtp=None, use_color=None, debug_target=None,
             if callback:
                 callback(None)
 
+
+class Responder (object):
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        if kwargs is None:
+            kwargs = {}
+        self.kwargs = kwargs
+
+    def __call__(self, message):
+        send_emails([(message, None)], *self.args, **self.kwargs)
+
+
 def get_address(person, header=False):
     r"""
     >>> from pygrader.model.person import Person as Person
