@@ -234,6 +234,74 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     <BLANKLINE>
     --===============...==--
 
+    Response to a submission on an unsubmittable assignment:
+
+    >>> server = SMTPServer(
+    ...     ('localhost', 1025), None, process=process, count=1)
+    >>> del message['Subject']
+    >>> message['Subject'] = 'attendance 1 submission'
+    >>> messages = [message]
+    >>> ms = MessageSender(address=('localhost', 1025), messages=messages)
+    >>> loop()  # doctest: +REPORT_UDIFF, +ELLIPSIS
+    respond with:
+    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    MIME-Version: 1.0
+    Content-Disposition: inline
+    Date: ...
+    From: Robot101 <phys101@tower.edu>
+    Reply-to: Robot101 <phys101@tower.edu>
+    To: Bilbo Baggins <bb@shire.org>
+    Subject: received invalid Attendance 1 submission
+    <BLANKLINE>
+    --===============...==
+    Content-Type: multipart/mixed; boundary="===============...=="
+    MIME-Version: 1.0
+    <BLANKLINE>
+    --===============...==
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    <BLANKLINE>
+    Billy,
+    <BLANKLINE>
+    We received your submission for Attendance 1, but you are not allowed
+    to submit that assignment via email.
+    <BLANKLINE>
+    Yours,
+    phys-101 robot
+    --===============...==
+    Content-Type: message/rfc822
+    MIME-Version: 1.0
+    <BLANKLINE>
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    From: Billy B <bb@greyhavens.net>
+    To: phys101 <phys101@tower.edu>
+    Return-Path: <bb@greyhavens.net>
+    Received: from smtp.mail.uu.edu (localhost.localdomain [127.0.0.1]) by smtp.mail.uu.edu (Postfix) with SMTP id 68CB45C8453 for <wking@tremily.us>; Mon, 10 Oct 2011 12:50:46 -0400 (EDT)
+    Received: from smtp.home.net (smtp.home.net [123.456.123.456]) by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF for <wking@tremily.us>; Mon, 09 Oct 2011 11:50:46 -0400 (EDT)
+    Message-ID: <hgi.jlk@home.net>
+    Subject: attendance 1 submission
+    <BLANKLINE>
+    The answer is 42.
+    --===============...==--
+    --===============...==
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Description: OpenPGP digital signature
+    Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
+    <BLANKLINE>
+    -----BEGIN PGP SIGNATURE-----
+    Version: GnuPG v2.0.17 (GNU/Linux)
+    <BLANKLINE>
+    ...
+    -----END PGP SIGNATURE-----
+    <BLANKLINE>
+    --===============...==--
+
     Response to a bad subject:
 
     >>> server = SMTPServer(
@@ -483,6 +551,20 @@ def _parse_message(course, msg, respond=None, use_color=None):
             respond(response)
         return None
 
+    if not assignment.submittable:
+        response_subject = 'received invalid {} submission'.format(
+            assignment.name)
+        response_text = (
+            '{},\n\n'
+            'We received your submission for {}, but you are not allowed\n'
+            'to submit that assignment via email.\n\n'
+            'Yours,\n{}').format(
+            person.alias(), assignment.name, course.robot.alias())
+        response = _construct_response(
+            author=course.robot, targets=[person],
+            subject=response_subject, text=response_text, original=msg)
+        respond(response)
+        
     if respond:
         response_subject = 'received {} submission'.format(assignment.name)
         response_text = (
