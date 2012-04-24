@@ -305,7 +305,6 @@ def _check_late(basedir, assignment, person, time, max_late=0, use_color=None,
 def _get_verified_message(message, pgp_key, use_color=None):
     """
 
-    >>> from copy import deepcopy
     >>> from pgp_mime import sign, encodedMIMEText
 
     The student composes a message...
@@ -325,8 +324,7 @@ def _get_verified_message(message, pgp_key, use_color=None):
     We check that the message is signed, and that it is signed by the
     appropriate key.
 
-    >>> our_message = _get_verified_message(
-    ...     deepcopy(signed), pgp_key='4332B6E3')
+    >>> our_message = _get_verified_message(signed, pgp_key='4332B6E3')
     >>> print(our_message.as_string())  # doctest: +REPORT_UDIFF
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
@@ -340,14 +338,12 @@ def _get_verified_message(message, pgp_key, use_color=None):
 
     If it is signed, but not by the right key, we get ``None``.
 
-    >>> print(_get_verified_message(
-    ...     deepcopy(signed), pgp_key='01234567'))
+    >>> print(_get_verified_message(signed, pgp_key='01234567'))
     None
 
     If it is not signed at all, we get ``None``.
 
-    >>> print(_get_verified_message(
-    ...     deepcopy(message), pgp_key='4332B6E3'))
+    >>> print(_get_verified_message(message, pgp_key='4332B6E3'))
     None
     """
     highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
