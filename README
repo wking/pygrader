@@ -79,10 +79,11 @@ the course directory::
 
   $ cat test/course.conf
   [course]
-  robot: Robot101
+  name: Physics 101
   assignments: Attendance 1, Attendance 2, Attendance 3, Attendance 4,
     Attendance 5, Attendance 6, Attendance 7, Attendance 8, Attendance 9,
     Assignment 1, Assignment 2, Exam 1, Exam 2
+  robot: Robot101
   professors: Gandalf
   assistants: Sauron
   students: Bilbo Baggins, Frodo Baggins, Aragorn
@@ -113,7 +114,7 @@ the course directory::
   due: 2011-10-17
 
   [Robot101]
-  nickname: phys101 robot
+  nickname: phys-101 robot
   emails: phys101@tower.edu
   pgp-key: 4332B6E3
 

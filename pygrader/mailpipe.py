@@ -336,7 +336,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     We got an email from you with the following subject:
       'need help for the first homework'
     which does not match any submittable assignment name for
-    phys101.
+    Physics 101.
     Remember to use the full name for the assignment in the
     subject.  For example:
       Assignment 1 submission
@@ -375,8 +375,179 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     <BLANKLINE>
     --===============...==--
 
+    Response to a missing subject:
+
+    >>> server = SMTPServer(
+    ...     ('localhost', 1025), None, process=process, count=1)
+    >>> del message['Subject']
+    >>> messages = [message]
+    >>> ms = MessageSender(address=('localhost', 1025), messages=messages)
+    >>> loop()  # doctest: +REPORT_UDIFF, +ELLIPSIS
+    respond with:
+    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    MIME-Version: 1.0
+    Content-Disposition: inline
+    Date: ...
+    From: Robot101 <phys101@tower.edu>
+    Reply-to: Robot101 <phys101@tower.edu>
+    To: Bilbo Baggins <bb@shire.org>
+    Subject: no subject in <hgi.jlk@home.net>
+    <BLANKLINE>
+    --===============...==
+    Content-Type: multipart/mixed; boundary="===============...=="
+    MIME-Version: 1.0
+    <BLANKLINE>
+    --===============...==
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    <BLANKLINE>
+    Billy,
+    <BLANKLINE>
+    We received an email message from you without a subject.
+    <BLANKLINE>
+    Yours,
+    phys-101 robot
+    --===============...==
+    Content-Type: message/rfc822
+    MIME-Version: 1.0
+    <BLANKLINE>
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    From: Billy B <bb@greyhavens.net>
+    To: phys101 <phys101@tower.edu>
+    Return-Path: <bb@greyhavens.net>
+    Received: from smtp.mail.uu.edu (localhost.localdomain [127.0.0.1]) by smtp.mail.uu.edu (Postfix) with SMTP id 68CB45C8453 for <wking@tremily.us>; Mon, 10 Oct 2011 12:50:46 -0400 (EDT)
+    Received: from smtp.home.net (smtp.home.net [123.456.123.456]) by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF for <wking@tremily.us>; Mon, 09 Oct 2011 11:50:46 -0400 (EDT)
+    Message-ID: <hgi.jlk@home.net>
+    <BLANKLINE>
+    The answer is 42.
+    --===============...==--
+    --===============...==
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Description: OpenPGP digital signature
+    Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
+    <BLANKLINE>
+    -----BEGIN PGP SIGNATURE-----
+    Version: GnuPG v2.0.17 (GNU/Linux)
+    <BLANKLINE>
+    ...
+    -----END PGP SIGNATURE-----
+    <BLANKLINE>
+    --===============...==--
+
+    Response to an insecure message from a person with a PGP key:
+
+    >>> student = course.course.person(email='bb@greyhavens.net')
+    >>> student.pgp_key = '4332B6E3'
+    >>> server = SMTPServer(
+    ...     ('localhost', 1025), None, process=process, count=1)
+    >>> del message['Subject']
+    >>> messages = [message]
+    >>> ms = MessageSender(address=('localhost', 1025), messages=messages)
+    >>> loop()  # doctest: +REPORT_UDIFF, +ELLIPSIS
+    respond with:
+    Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="===============...=="
+    MIME-Version: 1.0
+    Content-Disposition: inline
+    Date: ...
+    From: Robot101 <phys101@tower.edu>
+    Reply-to: Robot101 <phys101@tower.edu>
+    To: Bilbo Baggins <bb@shire.org>
+    Subject: unsigned message <hgi.jlk@home.net>
+    <BLANKLINE>
+    --===============...==
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Type: application/pgp-encrypted; charset="us-ascii"
+    <BLANKLINE>
+    Version: 1
+    <BLANKLINE>
+    --===============...==
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Description: OpenPGP encrypted message
+    Content-Type: application/octet-stream; name="encrypted.asc"; charset="us-ascii"
+    <BLANKLINE>
+    -----BEGIN PGP MESSAGE-----
+    Version: GnuPG v2.0.17 (GNU/Linux)
+    <BLANKLINE>
+    ...
+    -----END PGP MESSAGE-----
+    <BLANKLINE>
+    --===============...==--
+
+    Response to a message from an unregistered person:
+
+    >>> server = SMTPServer(
+    ...     ('localhost', 1025), None, process=process, count=1)
     >>> del message['Return-Path']
-    >>> message['Return-Path'] = '<bb@greyhavens.net>'
+    >>> message['Return-Path'] = '<invalid.return.path@home.net>'
+    >>> messages = [message]
+    >>> ms = MessageSender(address=('localhost', 1025), messages=messages)
+    >>> loop()  # doctest: +REPORT_UDIFF, +ELLIPSIS
+    respond with:
+    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    MIME-Version: 1.0
+    Content-Disposition: inline
+    Date: ...
+    From: Robot101 <phys101@tower.edu>
+    Reply-to: Robot101 <phys101@tower.edu>
+    To: "invalid.return.path@home.net" <invalid.return.path@home.net>
+    Subject: unregistered address invalid.return.path@home.net
+    <BLANKLINE>
+    --===============...==
+    Content-Type: multipart/mixed; boundary="===============...=="
+    MIME-Version: 1.0
+    <BLANKLINE>
+    --===============...==
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    <BLANKLINE>
+    invalid.return.path@home.net,
+    <BLANKLINE>
+    Your email address is not registered with pygrader for
+    Physics 101.  If you feel it should be, contact your professor
+    or TA.
+    <BLANKLINE>
+    Yours,
+    phys-101 robot
+    --===============...==
+    Content-Type: message/rfc822
+    MIME-Version: 1.0
+    <BLANKLINE>
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    From: Billy B <bb@greyhavens.net>
+    To: phys101 <phys101@tower.edu>
+    Received: from smtp.mail.uu.edu (localhost.localdomain [127.0.0.1]) by smtp.mail.uu.edu (Postfix) with SMTP id 68CB45C8453 for <wking@tremily.us>; Mon, 10 Oct 2011 12:50:46 -0400 (EDT)
+    Received: from smtp.home.net (smtp.home.net [123.456.123.456]) by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF for <wking@tremily.us>; Mon, 09 Oct 2011 11:50:46 -0400 (EDT)
+    Message-ID: <hgi.jlk@home.net>
+    Return-Path: <invalid.return.path@home.net>
+    <BLANKLINE>
+    The answer is 42.
+    --===============...==--
+    --===============...==
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Description: OpenPGP digital signature
+    Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
+    <BLANKLINE>
+    -----BEGIN PGP SIGNATURE-----
+    Version: GnuPG v2.0.17 (GNU/Linux)
+    <BLANKLINE>
+    ...
+    -----END PGP SIGNATURE-----
+    <BLANKLINE>
+    --===============...==--
 
     >>> course.cleanup()
     """
@@ -433,14 +604,6 @@ def _parse_message(course, msg, respond=None, use_color=None):
                 string='no Return-Path in {}'.format(mid), color=lowlight))
         return None
     sender = sender[1:-1]  # strip wrapping '<' and '>'
-    time = _message_time(message=msg, use_color=use_color)
-
-    if respond:
-        if time:
-            time_str = _formatdate(time)
-        else:
-            time_str = 'unknown time'
-        response_subject = 'received {} at {}'.format(mid, time_str)
 
     people = list(course.find_people(email=sender))
     if len(people) == 0:
@@ -448,16 +611,15 @@ def _parse_message(course, msg, respond=None, use_color=None):
                 string='no person found to match {}'.format(sender),
                 color=bad))
         if respond:
-            person = _Person(name=None, emails=[sender])
+            person = _Person(name=sender, emails=[sender])
+            response_subject = 'unregistered address {}'.format(sender)
             response_text = (
                 '{},\n\n'
                 'Your email address is not registered with pygrader for\n'
                 '{}.  If you feel it should be, contact your professor\n'
                 'or TA.\n\n'
                 'Yours,\n{}').format(
-                sender, course.robot.alias())
-            response_text = 'Address {} is not registered for {}.'.format(
-                sender, course.name)
+                sender, course.name, course.robot.alias())
             response = _construct_response(
                 author=course.robot, targets=[person],
                 subject=response_subject, text=response_text, original=msg)
@@ -472,20 +634,21 @@ def _parse_message(course, msg, respond=None, use_color=None):
     person = people[0]
 
     if person.pgp_key:
+        original = msg
         msg = _get_verified_message(msg, person.pgp_key, use_color=use_color)
         if msg is None:
             if respond:
+                response_subject = 'unsigned message {}'.format(mid)
                 response_text = (
                     '{},\n\n'
                     'We received an email message from you without a valid\n'
                     'PGP signature.\n\n'
                     'Yours,\n{}').format(
                     person.alias(), course.robot.alias())
-                response_text = 'Message not signed by {}.'.format(
-                    person.pgp_key)
                 response = _construct_response(
                     author=course.robot, targets=[person],
-                    subject=response_subject, text=response_text, original=msg)
+                    subject=response_subject, text=response_text,
+                    original=original)
                 respond(response)
             return None
 
@@ -493,6 +656,7 @@ def _parse_message(course, msg, respond=None, use_color=None):
         _LOG.warn(_color_string(
                 string='no subject in {}'.format(mid), color=bad))
         if respond:
+            response_subject = 'no subject in {}'.format(mid)
             response_text = (
                 '{},\n\n'
                 'We received an email message from you without a subject.\n\n'
@@ -565,11 +729,17 @@ def _parse_message(course, msg, respond=None, use_color=None):
             subject=response_subject, text=response_text, original=msg)
         respond(response)
         
+    time = _message_time(message=msg, use_color=use_color)
+
     if respond:
         response_subject = 'received {} submission'.format(assignment.name)
+        if time:
+            time_str = 'on {}'.format(_formatdate(time))
+        else:
+            time_str = 'at an unknown time'
         response_text = (
             '{},\n\n'
-            'We received your submission for {} on {}.\n\n'
+            'We received your submission for {} {}.\n\n'
             'Yours,\n{}').format(
             person.alias(), assignment.name, time_str, course.robot.alias())
         response = _construct_response(

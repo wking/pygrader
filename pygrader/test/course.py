@@ -10,7 +10,7 @@ from pygrader.storage import load_course as _load_course
 
 COURSE_CONF = """
 [course]
-name: phys101
+name: Physics 101
 assignments: Attendance 1, Attendance 2, Attendance 3, Attendance 4,
   Attendance 5, Attendance 6, Attendance 7, Attendance 8, Attendance 9,
   Assignment 1, Assignment 2, Exam 1, Exam 2

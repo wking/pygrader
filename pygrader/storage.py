@@ -45,7 +45,7 @@ def load_course(basedir):
     >>> stub_course = StubCourse(load=False)
     >>> course = load_course(basedir=stub_course.basedir)
     >>> course.name
-    'phys101'
+    'Physics 101'
     >>> course.assignments  # doctest: +ELLIPSIS
     [<pygrader.model.assignment.Assignment object at 0x...>, ...]
     >>> course.people  # doctest: +ELLIPSIS
