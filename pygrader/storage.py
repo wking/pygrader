@@ -174,6 +174,46 @@ def parse_date(string):
         ret -= offset
     return ret
 
+def parse_boolean(value):
+    """Convert a boolean string into ``True`` or ``False``.
+
+    Supports the same values as ``RawConfigParser``
+
+    >>> parse_boolean('YES')
+    True
+    >>> parse_boolean('Yes')
+    True
+    >>> parse_boolean('tRuE')
+    True
+    >>> parse_boolean('False')
+    False
+    >>> parse_boolean('FALSE')
+    False
+    >>> parse_boolean('no')
+    False
+    >>> parse_boolean('none')
+    Traceback (most recent call last):
+      ...
+    ValueError: Not a boolean: none
+    >>> parse_boolean('')  # doctest: +NORMALIZE_WHITESPACE
+    Traceback (most recent call last):
+      ...
+    ValueError: Not a boolean:
+
+    It passes through boolean inputs without modification (so you
+    don't have to use strings for default values):
+
+    >>> parse_boolean({}.get('my-option', True))
+    True
+    >>> parse_boolean({}.get('my-option', False))
+    False
+    """
+    if value in [True, False]:
+        return value
+    # Using an underscored method is hackish, but it should be fairly stable.
+    p = _configparser.RawConfigParser()
+    return p._convert_to_boolean(value)
+
 def load_assignment(name, data):
     r"""Load an assignment from a ``dict``
 
@@ -183,9 +223,11 @@ def load_assignment(name, data):
     ...     data={'points': '1',
     ...           'weight': '0.1/2',
     ...           'due': '2011-10-04T00:00-04:00',
+    ...           'submittable': 'yes',
     ...           })
-    >>> print('{0.name} (points: {0.points}, weight: {0.weight}, due: {0.due})'.format(a))
-    Attendance 1 (points: 1, weight: 0.05, due: 1317700800)
+    >>> print(('{0.name} (points: {0.points}, weight: {0.weight}, '
+    ...        'due: {0.due}, submittable: {0.submittable})').format(a))
+    Attendance 1 (points: 1, weight: 0.05, due: 1317700800, submittable: True)
     >>> print(formatdate(a.due, localtime=True))
     Tue, 04 Oct 2011 00:00:00 -0400
     """
@@ -197,7 +239,10 @@ def load_assignment(name, data):
         assert len(wterms) == 2, wterms
         weight = float(wterms[0])/float(wterms[1])
     due = parse_date(data['due'])
-    return _Assignment(name=name, points=points, weight=weight, due=due)
+    submittable = parse_boolean(data.get('submittable', False))
+    return _Assignment(
+        name=name, points=points, weight=weight, due=due,
+        submittable=submittable)
 
 def load_person(name, data={}):
     r"""Load a person from a ``dict``

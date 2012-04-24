@@ -15,11 +15,12 @@
 # pygrader.  If not, see <http://www.gnu.org/licenses/>.
 
 class Assignment (object):
-    def __init__(self, name, points=1, weight=0, due=0):
+    def __init__(self, name, points=1, weight=0, due=0, submittable=True):
         self.name = name
         self.points = points
         self.weight = weight
         self.due = due
+        self.submittable = submittable
 
     def __str__(self):
         return '<{} {}>'.format(type(self).__name__, self.name)
