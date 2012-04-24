@@ -60,6 +60,97 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
 
     If you don't want procmail to eat the message, you can use the
     ``c`` flag (carbon copy) by starting your rule off with ``:0 c``.
+
+    >>> from asyncore import loop
+    >>> from io import StringIO
+    >>> from pgp_mime.email import encodedMIMEText
+    >>> from pygrader.test.course import StubCourse
+    >>> from pygrader.test.client import MessageSender
+    >>> from pygrader.test.server import SMTPServer
+
+    Messages with unrecognized ``Return-Path``\s are silently dropped:
+
+    >>> course = StubCourse()
+    >>> def process(peer, mailfrom, rcpttos, data):
+    ...     mailpipe(
+    ...         basedir=course.basedir, course=course.course,
+    ...         stream=StringIO(data), output=course.mailbox)
+    >>> message = encodedMIMEText('The answer is 42.')
+    >>> message['Message-ID'] = '<123.456@home.net>'
+    >>> message['Return-Path'] = '<invalid.return.path@home.net>'
+    >>> message['Received'] = (
+    ...     'from smtp.home.net (smtp.home.net [123.456.123.456]) '
+    ...     'by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF '
+    ...     'for <wking@tremily.us>; Mon, 09 Oct 2011 11:50:46 -0400 (EDT)')
+    >>> message['From'] = 'Billy B <bb@greyhavens.net>'
+    >>> message['To'] = 'S <eye@tower.edu>'
+    >>> message['Subject'] = 'assignment 1 submission'
+    >>> messages = [message]
+    >>> ms = MessageSender(address=('localhost', 1025), messages=messages)
+    >>> loop()
+    >>> course.print_tree()  # doctest: +REPORT_UDIFF
+    course.conf
+
+    If we add a valid ``Return-Path``, we get the expected delivery:
+
+    >>> server = SMTPServer(
+    ...     ('localhost', 1025), None, process=process, count=1)
+    >>> del message['Return-Path']
+    >>> message['Return-Path'] = '<bb@greyhavens.net>'
+    >>> ms = MessageSender(address=('localhost', 1025), messages=messages)
+    >>> loop()
+    >>> course.print_tree()  # doctest: +REPORT_UDIFF, +ELLIPSIS
+    Bilbo_Baggins
+    Bilbo_Baggins/Assignment_1
+    Bilbo_Baggins/Assignment_1/mail
+    Bilbo_Baggins/Assignment_1/mail/cur
+    Bilbo_Baggins/Assignment_1/mail/new
+    Bilbo_Baggins/Assignment_1/mail/new/...:2,S
+    Bilbo_Baggins/Assignment_1/mail/tmp
+    course.conf
+    mail
+    mail/cur
+    mail/new
+    mail/new/...
+    mail/tmp
+
+    The last ``Received`` is used to timestamp the message:
+
+    >>> server = SMTPServer(
+    ...     ('localhost', 1025), None, process=process, count=1)
+    >>> del message['Message-ID']
+    >>> message['Message-ID'] = '<abc.def@home.net>'
+    >>> del message['Received']
+    >>> message['Received'] = (
+    ...     'from smtp.mail.uu.edu (localhost.localdomain [127.0.0.1]) '
+    ...     'by smtp.mail.uu.edu (Postfix) with SMTP id 68CB45C8453 '
+    ...     'for <wking@tremily.us>; Mon, 10 Oct 2011 12:50:46 -0400 (EDT)')
+    >>> message['Received'] = (
+    ...     'from smtp.home.net (smtp.home.net [123.456.123.456]) '
+    ...     'by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF '
+    ...     'for <wking@tremily.us>; Mon, 09 Oct 2011 11:50:46 -0400 (EDT)')
+    >>> messages = [message]
+    >>> ms = MessageSender(address=('localhost', 1025), messages=messages)
+    >>> loop()
+    >>> course.print_tree()  # doctest: +REPORT_UDIFF, +ELLIPSIS
+    Bilbo_Baggins
+    Bilbo_Baggins/Assignment_1
+    Bilbo_Baggins/Assignment_1/late
+    Bilbo_Baggins/Assignment_1/mail
+    Bilbo_Baggins/Assignment_1/mail/cur
+    Bilbo_Baggins/Assignment_1/mail/new
+    Bilbo_Baggins/Assignment_1/mail/new/...:2,S
+    Bilbo_Baggins/Assignment_1/mail/new/...:2,S
+    Bilbo_Baggins/Assignment_1/mail/tmp
+    course.conf
+    mail
+    mail/cur
+    mail/new
+    mail/new/...
+    mail/new/...
+    mail/tmp
+
+    >>> course.cleanup()
     """
     if stream is None:
         stream = _sys.stdin
@@ -80,6 +171,8 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
     if mailbox is None:
         mbox = None
         messages = [(None,_message_from_file(stream))]
+        if output is not None:
+            ombox = _mailbox.Maildir(output, factory=None, create=True)
     elif mailbox == 'mbox':
         mbox = _mailbox.mbox(input_, factory=None, create=False)
         messages = mbox.items()
@@ -96,10 +189,11 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
         ret = _parse_message(
             course=course, msg=msg, use_color=use_color)
         if ret:
-            if mbox is not None and output is not None and dry_run is False:
+            if output is not None and dry_run is False:
                 # move message from input mailbox to output mailbox
                 ombox.add(msg)
-                del mbox[key]
+                if mbox is not None:
+                    del mbox[key]
             yield ret
 
 def _parse_message(course, msg, use_color=None):
