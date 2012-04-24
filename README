@@ -79,6 +79,7 @@ the course directory::
 
   $ cat test/course.conf
   [course]
+  robot: Robot101
   assignments: Attendance 1, Attendance 2, Attendance 3, Attendance 4,
     Attendance 5, Attendance 6, Attendance 7, Attendance 8, Attendance 9,
     Assignment 1, Assignment 2, Exam 1, Exam 2
@@ -98,10 +99,23 @@ the course directory::
 
   …
 
+  [Assignment 1]
+  points: 10
+  weight: 0.4/2
+  due: 2011-10-10
+  submittable: yes
+
+  …
+
   [Exam 2]
   points: 10
   weight: 0.4/2
   due: 2011-10-17
+
+  [Robot101]
+  nickname: phys101 robot
+  emails: phys101@tower.edu
+  pgp-key: 4332B6E3
 
   [Gandalf]
   nickname: G-Man
@@ -128,6 +142,16 @@ with PGP_.  It will also be used to authenticate ownership of incoming
 emails.  You'll need to have GnuPG_ on your local host for this to
 work, and the user running pygrader should have the associated keys in
 their keychain.
+
+The ``course.robot`` option defines a dummy person used to sign
+automatically generated emails (e.g. responses to mailpipe-processed
+submissions).
+
+The ``submittable`` option marks assignments that accept direct
+submission from students (e.g. homeworks).  You probably don't want to
+set this option for attendance, since it would allow students to mark
+themselves as having attended a class.  ``submittable`` default to
+``False``.
 
 Processing submissions
 ----------------------
