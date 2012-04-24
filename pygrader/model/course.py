@@ -18,7 +18,8 @@ from .. import LOG as _LOG
 
 
 class Course (object):
-    def __init__(self, assignments=None, people=None, grades=None):
+    def __init__(self, name=None, assignments=None, people=None, grades=None):
+        self.name = name
         if assignments is None:
             assignments = []
         self.assignments = sorted(assignments)

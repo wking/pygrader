@@ -39,9 +39,24 @@ _DATE_REGEXP = _re.compile('^([^T]*)(T?)([^TZ+-.]*)([.]?[0-9]*)([+-][0-9:]*|Z?)$
 
 
 def load_course(basedir):
+    """Load a course directory.
+
+    >>> from pygrader.test.course import StubCourse
+    >>> stub_course = StubCourse(load=False)
+    >>> course = load_course(basedir=stub_course.basedir)
+    >>> course.name
+    'phys101'
+    >>> course.assignments  # doctest: +ELLIPSIS
+    [<pygrader.model.assignment.Assignment object at 0x...>, ...]
+    >>> course.people  # doctest: +ELLIPSIS
+    [<pygrader.model.person.Person object at 0x...>, ...]
+    >>> course.grades
+    []
+    """
     _LOG.debug('loading course from {}'.format(basedir))
     config = _configparser.ConfigParser()
     config.read([_os_path.join(basedir, 'course.conf')])
+    name = config.get('course', 'name')
     names = {}
     for option in ['assignments', 'professors', 'assistants', 'students']:
         names[option] = [
@@ -66,7 +81,8 @@ def load_course(basedir):
                 people[person].groups = [group]
     people = people.values()
     grades = list(load_grades(basedir, assignments, people))
-    return _Course(assignments=assignments, people=people, grades=grades)
+    return _Course(
+        name=name, assignments=assignments, people=people, grades=grades)
 
 def parse_date(string):
     """Parse dates given using the W3C DTF profile of ISO 8601.

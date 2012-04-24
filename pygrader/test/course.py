@@ -10,6 +10,7 @@ from pygrader.storage import load_course as _load_course
 
 COURSE_CONF = """
 [course]
+name: phys101
 assignments: Attendance 1, Attendance 2, Attendance 3, Attendance 4,
   Attendance 5, Attendance 6, Attendance 7, Attendance 8, Attendance 9,
   Assignment 1, Assignment 2, Exam 1, Exam 2
@@ -113,14 +114,15 @@ class StubCourse (object):
     course.conf
     >>> course.cleanup()
     """
-    def __init__(self):
+    def __init__(self, load=True):
         self.basedir = _tempfile.mkdtemp(prefix='pygrader-tmp-')
         try:
             self.mailbox = _os_path.join(self.basedir, 'mail')
             course_conf = _os_path.join(self.basedir, 'course.conf')
             with open(course_conf, 'w') as f:
                 f.write(COURSE_CONF)
-            self.course = _load_course(basedir=self.basedir)
+            if load:
+                self.course = _load_course(basedir=self.basedir)
         except Exception:
             self.cleanup()
 
