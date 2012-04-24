@@ -32,6 +32,21 @@ from .color import standard_colors as _standard_colors
 
 
 def message_time(message, use_color=None):
+    """Get the Unix time when ``message`` was received.
+
+    >>> from email.utils import formatdate
+    >>> from pgp_mime.email import encodedMIMEText
+    >>> msg = encodedMIMEText('Ping!')
+    >>> msg['Received'] = (
+    ...     'from smtp.home.net (smtp.home.net [123.456.123.456]) '
+    ...     'by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF '
+    ...     'for <wking@tremily.us>; Sun, 09 Oct 2011 11:50:46 -0400 (EDT)')
+    >>> time = message_time(msg)
+    >>> time
+    1318175446.0
+    >>> formatdate(time)
+    'Sun, 09 Oct 2011 15:50:46 -0000'
+    """
     highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
     received = message['Received']  # RFC 822
     if received is None:
