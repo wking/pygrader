@@ -16,7 +16,7 @@
 
 import logging as _logging
 
-__version__ = '0.1'
+__version__ = '0.2'
 ENCODING = 'utf-8'
 
 
