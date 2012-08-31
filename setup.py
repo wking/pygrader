@@ -41,6 +41,8 @@ _setup(
         'Operating System :: OS Independent',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
         'Topic :: Communications :: Email',
         'Topic :: Database',
         'Topic :: Education',
