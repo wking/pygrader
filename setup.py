@@ -48,6 +48,8 @@ _setup(
         'Topic :: Education',
         ],
     scripts = ['bin/pg.py'],
-    packages = ['pygrader', 'pygrader.model', 'pygrader.test'],
-    provides = ['pygrader', 'pygrader.model', 'pygrader.test'],
+    packages = [
+        'pygrader', 'pygrader.handler', 'pygrader.model', 'pygrader.test'],
+    provides = [
+        'pygrader', 'pygrader.handler', 'pygrader.model', 'pygrader.test'],
     )

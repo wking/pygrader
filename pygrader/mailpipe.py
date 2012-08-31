@@ -18,31 +18,29 @@ from __future__ import absolute_import
 
 from email import message_from_file as _message_from_file
 from email.header import decode_header as _decode_header
-from email.utils import formatdate as _formatdate
-import hashlib as _hashlib
-import locale as _locale
 import mailbox as _mailbox
-import os as _os
-import os.path as _os_path
+import re as _re
 import sys as _sys
-import time as _time
 
 from pgp_mime import verify as _verify
 from lxml import etree as _etree
 
 from . import LOG as _LOG
-from .color import standard_colors as _standard_colors
 from .color import color_string as _color_string
-from .email import construct_response as _construct_response
-from .extract_mime import extract_mime as _extract_mime
-from .extract_mime import message_time as _message_time
+from .color import standard_colors as _standard_colors
 from .model.person import Person as _Person
-from .storage import assignment_path as _assignment_path
-from .storage import set_late as _set_late
+
+from .handler import respond as _respond
+from .handler.submission import run as _handle_submission
+
+
+_TAG_REGEXP = _re.compile('^.*\[([^]]*)\].*$')
 
 
 def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
-             output=None, max_late=0, respond=None, use_color=None,
+             output=None, max_late=0, handlers={
+        'submit': _handle_submission,
+        }, respond=None, use_color=None,
              dry_run=False, **kwargs):
     """Run from procmail to sort incomming submissions
 
@@ -59,7 +57,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
       # Grab all incoming homeworks emails.  This rule eats matching emails
       # (i.e. no further procmail processing).
       :0
-      * ^Subject:.*\[phys160-sub]
+      * ^Subject:.*\[phys160:submit]
       | "$PYGRADE_MAILPIPE" mailpipe
 
     If you don't want procmail to eat the message, you can use the
@@ -88,7 +86,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     ...     'for <wking@tremily.us>; Sun, 09 Oct 2011 11:50:46 -0400 (EDT)')
     >>> message['From'] = 'Billy B <bb@greyhavens.net>'
     >>> message['To'] = 'phys101 <phys101@tower.edu>'
-    >>> message['Subject'] = 'assignment 1 submission'
+    >>> message['Subject'] = '[submit] assignment 1'
     >>> messages = [message]
     >>> ms = MessageSender(address=('localhost', 1025), messages=messages)
     >>> loop()
@@ -212,7 +210,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Content-Disposition: inline
     From: Billy B <bb@greyhavens.net>
     To: phys101 <phys101@tower.edu>
-    Subject: assignment 1 submission
+    Subject: [submit] assignment 1
     Return-Path: <bb@greyhavens.net>
     Received: from smtp.mail.uu.edu (localhost.localdomain [127.0.0.1]) by smtp.mail.uu.edu (Postfix) with SMTP id 68CB45C8453 for <wking@tremily.us>; Mon, 10 Oct 2011 12:50:46 -0400 (EDT)
     Received: from smtp.home.net (smtp.home.net [123.456.123.456]) by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF for <wking@tremily.us>; Mon, 09 Oct 2011 11:50:46 -0400 (EDT)
@@ -239,7 +237,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> server = SMTPServer(
     ...     ('localhost', 1025), None, process=process, count=1)
     >>> del message['Subject']
-    >>> message['Subject'] = 'attendance 1 submission'
+    >>> message['Subject'] = '[submit] attendance 1'
     >>> messages = [message]
     >>> ms = MessageSender(address=('localhost', 1025), messages=messages)
     >>> loop()  # doctest: +REPORT_UDIFF, +ELLIPSIS
@@ -265,8 +263,8 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     <BLANKLINE>
     Billy,
     <BLANKLINE>
-    We received your submission for Attendance 1, but you are not allowed
-    to submit that assignment via email.
+    We received your submission for Attendance 1, but you are not
+    allowed to submit that assignment via email.
     <BLANKLINE>
     Yours,
     phys-101 robot
@@ -284,7 +282,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Received: from smtp.mail.uu.edu (localhost.localdomain [127.0.0.1]) by smtp.mail.uu.edu (Postfix) with SMTP id 68CB45C8453 for <wking@tremily.us>; Mon, 10 Oct 2011 12:50:46 -0400 (EDT)
     Received: from smtp.home.net (smtp.home.net [123.456.123.456]) by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF for <wking@tremily.us>; Mon, 09 Oct 2011 11:50:46 -0400 (EDT)
     Message-ID: <hgi.jlk@home.net>
-    Subject: attendance 1 submission
+    Subject: [submit] attendance 1
     <BLANKLINE>
     The answer is 42.
     --===============...==--
@@ -319,7 +317,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     From: Robot101 <phys101@tower.edu>
     Reply-to: Robot101 <phys101@tower.edu>
     To: Bilbo Baggins <bb@shire.org>
-    Subject: received 'need help for the first homework'
+    Subject: no tag in 'need help for the first homework'
     <BLANKLINE>
     --===============...==
     Content-Type: multipart/mixed; boundary="===============...=="
@@ -333,13 +331,8 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     <BLANKLINE>
     Billy,
     <BLANKLINE>
-    We got an email from you with the following subject:
-      'need help for the first homework'
-    which does not match any submittable assignment name for
-    Physics 101.
-    Remember to use the full name for the assignment in the
-    subject.  For example:
-      Assignment 1 submission
+    We received an email message from you without
+    subject tags.
     <BLANKLINE>
     Yours,
     phys-101 robot
@@ -551,19 +544,23 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
 
     >>> course.cleanup()
     """
+    highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
     if stream is None:
         stream = _sys.stdin
-    for msg,person,assignment,time in _load_messages(
+    for original,message,person,subject,target in _load_messages(
         course=course, stream=stream, mailbox=mailbox, input_=input_,
         output=output, respond=respond, use_color=use_color, dry_run=dry_run):
-        assignment_path = _assignment_path(basedir, assignment, person)
-        _save_local_message_copy(
-            msg=msg, person=person, assignment_path=assignment_path,
-            use_color=use_color, dry_run=dry_run)
-        _extract_mime(message=msg, output=assignment_path, dry_run=dry_run)
-        _check_late(
-            basedir=basedir, assignment=assignment, person=person, time=time,
-            max_late=max_late, use_color=use_color, dry_run=dry_run)
+        handler = _get_handler(
+            course=course, handlers=handlers, message=message, person=person,
+            subject=subject, target=target)
+        try:
+            handler(
+                basedir=basedir, course=course, original=original,
+                message=message, person=person, subject=subject,
+                max_late=max_late, respond=respond,
+                use_color=use_color, dry_run=dry_run)
+        except ValueError as error:
+            _LOG.warn(_color_string(string=str(error), color=bad))
 
 def _load_messages(course, stream, mailbox=None, input_=None, output=None,
                    respond=None, use_color=None, dry_run=False):
@@ -586,7 +583,7 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
         raise ValueError(mailbox)
     for key,msg in messages:
         ret = _parse_message(
-            course=course, msg=msg, respond=respond, use_color=use_color)
+            course=course, message=msg, respond=respond, use_color=use_color)
         if ret:
             if output is not None and dry_run is False:
                 # move message from input mailbox to output mailbox
@@ -595,92 +592,32 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
                     del mbox[key]
             yield ret
 
-def _parse_message(course, msg, respond=None, use_color=None):
+def _parse_message(course, message, respond=None, use_color=None):
     """Parse an incoming email and respond if neccessary.
 
     Return ``(msg, person, assignment, time)`` on successful parsing.
     Return ``None`` on failure.
     """
     highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
-    original = msg
-    mid = msg['Message-ID']
+    original = message
     try:
-        msg,person,subject = _get_message_person_and_subject(
-            course=course, message=msg, original=original, respond=respond,
-            use_color=use_color)
+        person = _get_message_person(
+            course=course, message=message, original=original,
+            respond=respond, use_color=use_color)
+        if person.pgp_key:
+            message = _get_decoded_message(
+                course=course, message=message, original=original, person=person,
+                respond=respond, use_color=use_color)
+        subject = _get_message_subject(
+            course=course, message=message, original=original, person=person,
+            respond=respond, use_color=use_color)
+        target = _get_message_target(
+            course=course, message=message, original=original, person=person,
+            subject=subject, respond=respond, use_color=use_color)
     except ValueError as error:
         _LOG.debug(_color_string(string=str(error), color=bad))
         return None
-
-    for assignment in course.assignments:
-        if _match_assignment(assignment, subject):
-            break
-    if not _match_assignment(assignment, subject):
-        _LOG.warn(_color_string(
-                string='no assignment found in {}'.format(repr(subject)),
-                color=bad))
-        if respond:
-            response_subject = "received '{}'".format(subject)
-            submittable_assignments = [
-                a for a in course.assignments if a.submittable]
-            if not submittable_assignments:
-                hint = (
-                    'In fact, there are no submittable assignments for\n'
-                    'this course!\n')
-            else:
-                hint = (
-                    'Remember to use the full name for the assignment in the\n'
-                    'subject.  For example:\n'
-                    '  {} submission\n\n').format(
-                    submittable_assignments[0].name)
-            response_text = (
-                '{},\n\n'
-                'We got an email from you with the following subject:\n'
-                '  {}\n'
-                'which does not match any submittable assignment name for\n'
-                '{}.\n'
-                '{}'
-                'Yours,\n{}').format(
-                person.alias(), repr(subject), course.name, hint,
-                course.robot.alias())
-            response = _construct_response(
-                author=course.robot, targets=[person],
-                subject=response_subject, text=response_text, original=msg)
-            respond(response)
-        return None
-
-    if not assignment.submittable:
-        response_subject = 'received invalid {} submission'.format(
-            assignment.name)
-        response_text = (
-            '{},\n\n'
-            'We received your submission for {}, but you are not allowed\n'
-            'to submit that assignment via email.\n\n'
-            'Yours,\n{}').format(
-            person.alias(), assignment.name, course.robot.alias())
-        response = _construct_response(
-            author=course.robot, targets=[person],
-            subject=response_subject, text=response_text, original=msg)
-        respond(response)
-        
-    time = _message_time(message=msg, use_color=use_color)
-
-    if respond:
-        response_subject = 'received {} submission'.format(assignment.name)
-        if time:
-            time_str = 'on {}'.format(_formatdate(time))
-        else:
-            time_str = 'at an unknown time'
-        response_text = (
-            '{},\n\n'
-            'We received your submission for {} {}.\n\n'
-            'Yours,\n{}').format(
-            person.alias(), assignment.name, time_str, course.robot.alias())
-        response = _construct_response(
-            author=course.robot, targets=[person],
-            subject=response_subject, text=response_text, original=msg)
-        respond(response)
-    return (msg, person, assignment, time)
+    return (original, message, person, subject, target)
 
 def _get_message_person(course, message, original, respond=None,
                         use_color=None):
@@ -694,18 +631,13 @@ def _get_message_person(course, message, original, respond=None,
         if respond:
             person = _Person(name=sender, emails=[sender])
             response_subject = 'unregistered address {}'.format(sender)
-            response_text = (
-                '{},\n\n'
-                'Your email address is not registered with pygrader for\n'
-                '{}.  If you feel it should be, contact your professor\n'
-                'or TA.\n\n'
-                'Yours,\n{}').format(
-                sender, course.name, course.robot.alias())
-            response = _construct_response(
-                author=course.robot, targets=[person],
-                subject=response_subject, text=response_text,
-                original=original)
-            respond(response)
+            _respond(
+                course=course, person=person, original=original,
+                subject=response_subject, text=(
+                    'Your email address is not registered with pygrader for\n'
+                    '{}.  If you feel it should be, contact your professor\n'
+                    'or TA.').format(course.name),
+                respond=respond)
         raise ValueError('no person found to match {}'.format(sender))
     if len(people) > 1:
         raise ValueError('multiple people match {} ({})'.format(
@@ -720,36 +652,52 @@ def _get_decoded_message(course, message, original, person,
         if respond:
             mid = original['Message-ID']
             response_subject = 'unsigned message {}'.format(mid)
-            response_text = (
-                '{},\n\n'
-                'We received an email message from you without a valid\n'
-                'PGP signature.\n\n'
-                'Yours,\n{}').format(
-                person.alias(), course.robot.alias())
-            response = _construct_response(
-                author=course.robot, targets=[person],
-                subject=response_subject, text=response_text,
-                original=original)
-            respond(response)
+            _respond(
+                course=course, person=person, original=original,
+                subject=response_subject, text=(
+                    'We received an email message from you without a valid\n'
+                    'PGP signature.'),
+                respond=respond)
         raise ValueError('unsigned message from {}'.format(person.alias()))
     return message
 
 def _get_message_subject(course, message, original, person,
                          respond=None, use_color=None):
+    """
+    >>> from email.header import Header
+    >>> from pgp_mime.email import encodedMIMEText
+    >>> message = encodedMIMEText('The answer is 42.')
+    >>> message['Message-ID'] = 'msg-id'
+    >>> _get_message_subject(
+    ...     course=None, message=message, original=message, person=None)
+    Traceback (most recent call last):
+      ...
+    ValueError: no subject in msg-id
+    >>> del message['Subject']
+    >>> subject = Header('unicode part', 'utf-8')
+    >>> subject.append('ascii part', 'ascii')
+    >>> message['Subject'] = subject.encode()
+    >>> _get_message_subject(
+    ...     course=None, message=message, original=message, person=None)
+    Traceback (most recent call last):
+      ...
+    ValueError: multi-part header [(b'unicode part', 'utf-8'), (b'ascii part', None)]
+    >>> del message['Subject']
+    >>> message['Subject'] = 'clean subject'
+    >>> _get_message_subject(
+    ...     course=None, message=message, original=message, person=None)
+    'clean subject'
+    """
     if message['Subject'] is None:
         mid = message['Message-ID']
         response_subject = 'no subject in {}'.format(mid)
         if respond:
-            response_text = (
-                '{},\n\n'
-                'We received an email message from you without a subject.\n\n'
-                'Yours,\n{}').format(
-                person.alias(), course.robot.alias())
-            response = _construct_response(
-                author=course.robot, targets=[person],
-                subject=response_subject, text=response_text,
-                original=original)
-            respond(response)
+            _respond(
+                course=course, person=person, original=original,
+                subject=response_subject, text=(
+                    'We received an email message from you without a subject.'
+                    ),
+                respond=respond)
         raise ValueError(response_subject)
 
     parts = _decode_header(message['Subject'])
@@ -758,74 +706,86 @@ def _get_message_subject(course, message, original, person,
     subject,encoding = parts[0]
     if encoding is None:
         encoding = 'ascii'
+    if not isinstance(subject, str):
+        subject = str(subject, encoding)
     _LOG.debug('decoded header {} -> {}'.format(parts[0], subject))
     return subject.lower().replace('#', '')
 
-def _get_message_person_and_subject(course, message, original,
-                                    respond=None, use_color=None):
-    original = message
-    person = _get_message_person(
-        course=course, message=message, original=original,
-        respond=respond, use_color=use_color)
-    if person.pgp_key:
-        message = _get_decoded_message(
-            course=course, message=message, original=original, person=person,
-            respond=respond, use_color=use_color)
-    subject = _get_message_subject(
-        course=course, message=message, original=original, person=person,
-        respond=respond, use_color=use_color)
-    return (message, person, subject)
+def _get_message_target(course, message, original, person, subject,
+                        respond=None, use_color=None):
+    """
+    >>> _get_message_target(course=None, message=None, original=None,
+    ...     person=None, subject='no tag')
+    Traceback (most recent call last):
+      ...
+    ValueError: no tag in 'no tag'
+    >>> _get_message_target(course=None, message=None, original=None,
+    ...     person=None, subject='[] empty tag')
+    Traceback (most recent call last):
+      ...
+    ValueError: empty tag in '[] empty tag'
+    >>> _get_message_target(course=None, message=None, original=None,
+    ...     person=None, subject='[abc] empty tag')
+    'abc'
+    >>> _get_message_target(course=None, message=None, original=None,
+    ...     person=None, subject='[phys160:abc] empty tag')
+    'abc'
+    """
+    match = _TAG_REGEXP.match(subject)
+    if match is None:
+        response_subject = 'no tag in {!r}'.format(subject)
+        if respond:
+            _respond(
+                course=course, person=person, original=original,
+                subject=response_subject, text=(
+                        'We received an email message from you without\n'
+                        'subject tags.'),
+                respond=respond)
+        raise ValueError(response_subject)
+    tag = match.group(1)
+    if tag == '':
+        response_subject = 'empty tag in {!r}'.format(subject)
+        if respond:
+            _respond(
+                course=course, person=person, original=original,
+                subject=response_subject, text=(
+                        'We received an email message from you with empty\n'
+                        'subject tags.'),
+                respond=respond)
+        raise ValueError(response_subject)    
+    target = tag.rsplit(':', 1)[-1]
+    _LOG.debug('extracted target {} -> {}'.format(subject, target))
+    return target
 
-def _match_assignment(assignment, subject):
-    return assignment.name.lower() in subject
-
-def _save_local_message_copy(msg, person, assignment_path, use_color=None,
-                             dry_run=False):
-    highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
+def _get_handler(course, handlers, message, person, subject, target,
+                 respond=None, use_color=None):
     try:
-        _os.makedirs(assignment_path)
-    except OSError:
-        pass
-    mpath = _os_path.join(assignment_path, 'mail')
-    try:
-        mbox = _mailbox.Maildir(mpath, factory=None, create=not dry_run)
-    except _mailbox.NoSuchMailboxError as e:
-        _LOG.debug(_color_string(
-                string='could not open mailbox at {}'.format(mpath),
-                color=bad))
-        mbox = None
-        new_msg = True
-    else:
-        new_msg = True
-        for other_msg in mbox:
-            if other_msg['Message-ID'] == msg['Message-ID']:
-                new_msg = False
-                break
-    if new_msg:
-        _LOG.debug(_color_string(
-                string='saving email from {} to {}'.format(
-                    person, assignment_path), color=good))
-        if mbox is not None and not dry_run:
-            mdmsg = _mailbox.MaildirMessage(msg)
-            mdmsg.add_flag('S')
-            mbox.add(mdmsg)
-            mbox.close()
-    else:
-        _LOG.debug(_color_string(
-                string='already found {} in {}'.format(
-                    msg['Message-ID'], mpath), color=good))
-
-def _check_late(basedir, assignment, person, time, max_late=0, use_color=None,
-                dry_run=False):
-    highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
-    if time > assignment.due + max_late:
-        dt = time - assignment.due
-        _LOG.warn(_color_string(
-                string='{} {} late by {} seconds ({} hours)'.format(
-                    person.name, assignment.name, dt, dt/3600.),
-                color=bad))
-        if not dry_run:
-            _set_late(basedir=basedir, assignment=assignment, person=person)
+        handler = handlers[target]
+    except KeyError: 
+        response_subject = 'no handler for {}'.format(target)
+        highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
+        _LOG.debug(_color_string(string=response_subject, color=bad))
+        if respond:
+            targets = sorted(handlers.keys())
+            if not targets:
+                hint = (
+                    'In fact, there are no available handlers for this\n'
+                    'course!\n')
+            else:
+                hint = (
+                    'Perhaps you meant to use one of the following:\n'
+                    '  {}\n\n').format('\n  '.join(targets))
+            _respond(
+                course=course, person=person, original=original,
+                subject=response_subject, text=(
+                    'We got an email from you with the following subject:\n'
+                    '  {!r}\n'
+                    'which does not match any submittable handler name for\n'
+                    '{}.\n'
+                    '{}').format(repr(subject), course.name, hint),
+                respond=respond)
+        return None
+    return handler
 
 def _get_verified_message(message, pgp_key, use_color=None):
     """
