@@ -596,88 +596,22 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
             yield ret
 
 def _parse_message(course, msg, respond=None, use_color=None):
+    """Parse an incoming email and respond if neccessary.
+
+    Return ``(msg, person, assignment, time)`` on successful parsing.
+    Return ``None`` on failure.
+    """
     highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
+    original = msg
     mid = msg['Message-ID']
-    sender = msg['Return-Path']  # RFC 822
-    if sender is None:
-        _LOG.debug(_color_string(
-                string='no Return-Path in {}'.format(mid), color=lowlight))
+    try:
+        msg,person,subject = _get_message_person_and_subject(
+            course=course, message=msg, original=original, respond=respond,
+            use_color=use_color)
+    except ValueError as error:
+        _LOG.debug(_color_string(string=str(error), color=bad))
         return None
-    sender = sender[1:-1]  # strip wrapping '<' and '>'
 
-    people = list(course.find_people(email=sender))
-    if len(people) == 0:
-        _LOG.warn(_color_string(
-                string='no person found to match {}'.format(sender),
-                color=bad))
-        if respond:
-            person = _Person(name=sender, emails=[sender])
-            response_subject = 'unregistered address {}'.format(sender)
-            response_text = (
-                '{},\n\n'
-                'Your email address is not registered with pygrader for\n'
-                '{}.  If you feel it should be, contact your professor\n'
-                'or TA.\n\n'
-                'Yours,\n{}').format(
-                sender, course.name, course.robot.alias())
-            response = _construct_response(
-                author=course.robot, targets=[person],
-                subject=response_subject, text=response_text, original=msg)
-            respond(response)
-        return None
-    if len(people) > 1:
-        _LOG.warn(_color_string(
-                string='multiple people match {} ({})'.format(
-                    sender, ', '.join(str(p) for p in people)),
-                color=bad))
-        return None
-    person = people[0]
-
-    if person.pgp_key:
-        original = msg
-        msg = _get_verified_message(msg, person.pgp_key, use_color=use_color)
-        if msg is None:
-            if respond:
-                response_subject = 'unsigned message {}'.format(mid)
-                response_text = (
-                    '{},\n\n'
-                    'We received an email message from you without a valid\n'
-                    'PGP signature.\n\n'
-                    'Yours,\n{}').format(
-                    person.alias(), course.robot.alias())
-                response = _construct_response(
-                    author=course.robot, targets=[person],
-                    subject=response_subject, text=response_text,
-                    original=original)
-                respond(response)
-            return None
-
-    if msg['Subject'] is None:
-        _LOG.warn(_color_string(
-                string='no subject in {}'.format(mid), color=bad))
-        if respond:
-            response_subject = 'no subject in {}'.format(mid)
-            response_text = (
-                '{},\n\n'
-                'We received an email message from you without a subject.\n\n'
-                'Yours,\n{}').format(
-                person.alias(), course.robot.alias())
-            response = _construct_response(
-                author=course.robot, targets=[person],
-                subject=response_subject, text=response_text, original=msg)
-            respond(response)
-        return None
-    parts = _decode_header(msg['Subject'])
-    if len(parts) != 1:
-        _LOG.warn(_color_string(
-                string='multi-part header {}'.format(parts), color=bad))
-        return None
-    subject,encoding = parts[0]
-    if encoding is None:
-        encoding = 'ascii'
-    _LOG.debug('decoded header {} -> {}'.format(parts[0], subject))
-
-    subject = subject.lower().replace('#', '')
     for assignment in course.assignments:
         if _match_assignment(assignment, subject):
             break
@@ -747,6 +681,100 @@ def _parse_message(course, msg, respond=None, use_color=None):
             subject=response_subject, text=response_text, original=msg)
         respond(response)
     return (msg, person, assignment, time)
+
+def _get_message_person(course, message, original, respond=None,
+                        use_color=None):
+    mid = message['Message-ID']
+    sender = message['Return-Path']  # RFC 822
+    if sender is None:
+        raise ValueError('no Return-Path in {}'.format(mid))
+    sender = sender[1:-1]  # strip wrapping '<' and '>'
+    people = list(course.find_people(email=sender))
+    if len(people) == 0:
+        if respond:
+            person = _Person(name=sender, emails=[sender])
+            response_subject = 'unregistered address {}'.format(sender)
+            response_text = (
+                '{},\n\n'
+                'Your email address is not registered with pygrader for\n'
+                '{}.  If you feel it should be, contact your professor\n'
+                'or TA.\n\n'
+                'Yours,\n{}').format(
+                sender, course.name, course.robot.alias())
+            response = _construct_response(
+                author=course.robot, targets=[person],
+                subject=response_subject, text=response_text,
+                original=original)
+            respond(response)
+        raise ValueError('no person found to match {}'.format(sender))
+    if len(people) > 1:
+        raise ValueError('multiple people match {} ({})'.format(
+                sender, ', '.join(str(p) for p in people)))
+    return people[0]
+
+def _get_decoded_message(course, message, original, person,
+                         respond=None, use_color=None):
+    message = _get_verified_message(
+        message, person.pgp_key, use_color=use_color)
+    if message is None:
+        if respond:
+            mid = original['Message-ID']
+            response_subject = 'unsigned message {}'.format(mid)
+            response_text = (
+                '{},\n\n'
+                'We received an email message from you without a valid\n'
+                'PGP signature.\n\n'
+                'Yours,\n{}').format(
+                person.alias(), course.robot.alias())
+            response = _construct_response(
+                author=course.robot, targets=[person],
+                subject=response_subject, text=response_text,
+                original=original)
+            respond(response)
+        raise ValueError('unsigned message from {}'.format(person.alias()))
+    return message
+
+def _get_message_subject(course, message, original, person,
+                         respond=None, use_color=None):
+    if message['Subject'] is None:
+        mid = message['Message-ID']
+        response_subject = 'no subject in {}'.format(mid)
+        if respond:
+            response_text = (
+                '{},\n\n'
+                'We received an email message from you without a subject.\n\n'
+                'Yours,\n{}').format(
+                person.alias(), course.robot.alias())
+            response = _construct_response(
+                author=course.robot, targets=[person],
+                subject=response_subject, text=response_text,
+                original=original)
+            respond(response)
+        raise ValueError(response_subject)
+
+    parts = _decode_header(message['Subject'])
+    if len(parts) != 1:
+        raise ValueError('multi-part header {}'.format(parts))
+    subject,encoding = parts[0]
+    if encoding is None:
+        encoding = 'ascii'
+    _LOG.debug('decoded header {} -> {}'.format(parts[0], subject))
+    return subject.lower().replace('#', '')
+
+def _get_message_person_and_subject(course, message, original,
+                                    respond=None, use_color=None):
+    original = message
+    person = _get_message_person(
+        course=course, message=message, original=original,
+        respond=respond, use_color=use_color)
+    if person.pgp_key:
+        message = _get_decoded_message(
+            course=course, message=message, original=original, person=person,
+            respond=respond, use_color=use_color)
+    subject = _get_message_subject(
+        course=course, message=message, original=original, person=person,
+        respond=respond, use_color=use_color)
+    return (message, person, subject)
 
 def _match_assignment(assignment, subject):
     return assignment.name.lower() in subject
