@@ -227,7 +227,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP SIGNATURE-----
-    Version: GnuPG v2.0.17 (GNU/Linux)
+    Version: GnuPG v2.0.19 (GNU/Linux)
     <BLANKLINE>
     ...
     -----END PGP SIGNATURE-----
@@ -295,7 +295,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP SIGNATURE-----
-    Version: GnuPG v2.0.17 (GNU/Linux)
+    Version: GnuPG v2.0.19 (GNU/Linux)
     <BLANKLINE>
     ...
     -----END PGP SIGNATURE-----
@@ -368,7 +368,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP SIGNATURE-----
-    Version: GnuPG v2.0.17 (GNU/Linux)
+    Version: GnuPG v2.0.19 (GNU/Linux)
     <BLANKLINE>
     ...
     -----END PGP SIGNATURE-----
@@ -433,7 +433,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP SIGNATURE-----
-    Version: GnuPG v2.0.17 (GNU/Linux)
+    Version: GnuPG v2.0.19 (GNU/Linux)
     <BLANKLINE>
     ...
     -----END PGP SIGNATURE-----
@@ -474,7 +474,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Content-Type: application/octet-stream; name="encrypted.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP MESSAGE-----
-    Version: GnuPG v2.0.17 (GNU/Linux)
+    Version: GnuPG v2.0.19 (GNU/Linux)
     <BLANKLINE>
     ...
     -----END PGP MESSAGE-----
@@ -542,7 +542,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP SIGNATURE-----
-    Version: GnuPG v2.0.17 (GNU/Linux)
+    Version: GnuPG v2.0.19 (GNU/Linux)
     <BLANKLINE>
     ...
     -----END PGP SIGNATURE-----
