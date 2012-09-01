@@ -216,6 +216,23 @@ targets include (see the ``handlers`` argument to
 
     [submit] assignment 1
 
+``get``
+  request information from the grade database.  For students, the
+  remainder of the email subject is irrelevant.  Grades and comments
+  for all graded assignments are returned in a single email.  An
+  example subject would be::
+
+    [get] my grades
+
+  Professors and TAs may request either a table of all grades for the
+  course (à la ``tabulate``), the full grades for a particular
+  student, or a particular student's submission for a particular
+  assignment.  Example subjects are (respectively):
+
+    [get] don't match any student names
+    [get] Bilbo Baggins
+    [get] Bilbo Baggins Assignment 1
+
 To allow you to easily sort the email, you can also prefix the target
 with additional information (see
 ``pygrader.mailpipe._get_message_target``).  For example, if you were

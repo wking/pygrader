@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License along with
 # pygrader.  If not, see <http://www.gnu.org/licenses/>.
 
+"Incoming email processing."
+
 from __future__ import absolute_import
 
 from email import message_from_file as _message_from_file
@@ -31,6 +33,7 @@ from .color import standard_colors as _standard_colors
 from .model.person import Person as _Person
 
 from .handler import respond as _respond
+from .handler.get import run as _handle_get
 from .handler.submission import run as _handle_submission
 
 
@@ -39,6 +42,7 @@ _TAG_REGEXP = _re.compile('^.*\[([^]]*)\].*$')
 
 def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
              output=None, max_late=0, handlers={
+        'get': _handle_get,
         'submit': _handle_submission,
         }, respond=None, use_color=None,
              dry_run=False, **kwargs):
