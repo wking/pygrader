@@ -27,11 +27,9 @@ import os.path as _os_path
 import time as _time
 
 from . import LOG as _LOG
-from .color import color_string as _color_string
-from .color import standard_colors as _standard_colors
 
 
-def message_time(message, use_color=None):
+def message_time(message):
     """Get the Unix time when ``message`` was received.
 
     >>> from email.utils import formatdate
@@ -47,12 +45,10 @@ def message_time(message, use_color=None):
     >>> formatdate(time)
     'Sun, 09 Oct 2011 15:50:46 -0000'
     """
-    highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
     received = message['Received']  # RFC 822
     if received is None:
         mid = message['Message-ID']
-        _LOG.debug(_color_string(
-                string='no Received in {}'.format(mid), color=lowlight))
+        _LOG.debug('no Received in {}'.format(mid))
         return None
     date = received.split(';', 1)[1]
     return _time.mktime(_email_utils.parsedate(date))

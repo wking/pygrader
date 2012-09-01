@@ -16,6 +16,9 @@
 
 import logging as _logging
 
+from .color import ColoredFormatter as _ColoredFormatter
+
+
 __version__ = '0.2'
 ENCODING = 'utf-8'
 
@@ -23,3 +26,5 @@ ENCODING = 'utf-8'
 LOG = _logging.getLogger('pygrade')
 LOG.setLevel(_logging.ERROR)
 LOG.addHandler(_logging.StreamHandler())
+LOG_FORMATTER = _ColoredFormatter()
+LOG.handlers[0].setFormatter(LOG_FORMATTER)

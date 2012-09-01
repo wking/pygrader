@@ -29,9 +29,6 @@ import pgp_mime as _pgp_mime
 
 from . import ENCODING as _ENCODING
 from . import LOG as _LOG
-from .color import standard_colors as _standard_colors
-from .color import color_string as _color_string
-from .color import write_color as _write_color
 from .model.person import Person as _Person
 
 
@@ -49,8 +46,7 @@ def test_smtp(smtp, author, targets, msg=None):
     smtp.send_message(msg=msg)
 test_smtp.__test__ = False  # not a test for nose
 
-def send_emails(emails, smtp=None, use_color=None, debug_target=None,
-                dry_run=False):
+def send_emails(emails, smtp=None, debug_target=None, dry_run=False):
     """Iterate through `emails` and mail them off one-by-one
 
     >>> from email.mime.text import MIMEText
@@ -64,15 +60,12 @@ def send_emails(emails, smtp=None, use_color=None, debug_target=None,
     ...     emails.append(
     ...         (msg,
     ...          lambda status: stdout.write('SUCCESS: {}\\n'.format(status))))
-    >>> send_emails(emails, use_color=False, dry_run=True)
+    >>> send_emails(emails, dry_run=True)
     ... # doctest: +REPORT_UDIFF, +NORMALIZE_WHITESPACE
-    sending message to ['Moneypenny <mp@sis.gov.uk>', 'James Bond <007@sis.gov.uk>']...\tDRY-RUN
     SUCCESS: None
-    sending message to ['M <m@sis.gov.uk>', 'James Bond <007@sis.gov.uk>']...\tDRY-RUN
     SUCCESS: None
     """
     local_smtp = smtp is None
-    highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
     for msg,callback in emails:
         sources = [
             _email_utils.formataddr(a) for a in _pgp_mime.email_sources(msg)]
@@ -84,10 +77,8 @@ def send_emails(emails, smtp=None, use_color=None, debug_target=None,
             # TODO: remove convert_content_transfer_encoding?
             #if msg.get('content-transfer-encoding', None) == 'base64':
             #    convert_content_transfer_encoding(msg, '8bit')
-            _LOG.debug(_color_string(
-                    '\n{}\n'.format(msg.as_string()), color=lowlight))
-        _write_color('sending message to {}...'.format(targets),
-                     color=highlight)
+            _LOG.debug('\n{}\n'.format(msg.as_string()))
+        _LOG.info('sending message to {}...'.format(targets))
         if not dry_run:
             try:
                 if local_smtp:
@@ -98,16 +89,16 @@ def send_emails(emails, smtp=None, use_color=None, debug_target=None,
                 if local_smtp:
                     smtp.quit()
             except:
-                _write_color('\tFAILED\n', bad)
+                _LOG.warning('failed to send message to {}'.format(targets))
                 if callback:
                     callback(False)
                 raise
             else:
-                _write_color('\tOK\n', good)
+                _LOG.info('sent message to {}'.format(targets))
                 if callback:
                     callback(True)
         else:
-            _write_color('\tDRY-RUN\n', good)
+            _LOG.info('dry run, so no message sent to {}'.format(targets))
             if callback:
                 callback(None)
 

@@ -29,8 +29,6 @@ import pgp_mime as _pgp_mime
 from lxml import etree as _etree
 
 from . import LOG as _LOG
-from .color import color_string as _color_string
-from .color import standard_colors as _standard_colors
 from .email import construct_email as _construct_email
 from .email import construct_response as _construct_response
 from .model.person import Person as _Person
@@ -94,7 +92,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
              handlers={
         'get': _handle_get,
         'submit': _handle_submission,
-        }, respond=None, use_color=None, dry_run=False, **kwargs):
+        }, respond=None, dry_run=False, **kwargs):
     """Run from procmail to sort incomming submissions
 
     For example, you can setup your ``.procmailrc`` like this::
@@ -551,12 +549,11 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
 
     >>> course.cleanup()
     """
-    highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
     if stream is None:
         stream = _sys.stdin
     for original,message,person,subject,target in _load_messages(
         course=course, stream=stream, mailbox=mailbox, input_=input_,
-        output=output, use_color=use_color, dry_run=dry_run,
+        output=output, dry_run=dry_run,
         continue_after_invalid_message=continue_after_invalid_message,
         respond=respond):
         try:
@@ -564,7 +561,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
             handler(
                 basedir=basedir, course=course, message=message,
                 person=person, subject=subject,
-                max_late=max_late, use_color=use_color, dry_run=dry_run)
+                max_late=max_late, dry_run=dry_run)
         except _InvalidMessage as error:
             if not continue_after_invalid_message:
                 raise
@@ -611,7 +608,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
 
 def _load_messages(course, stream, mailbox=None, input_=None, output=None,
                    continue_after_invalid_message=False, respond=None,
-                   use_color=None, dry_run=False):
+                   dry_run=False):
     if mailbox is None:
         mbox = None
         messages = [(None,_message_from_file(stream))]
@@ -631,8 +628,7 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
         raise ValueError(mailbox)
     for key,msg in messages:
         try:
-            ret = _parse_message(
-                course=course, message=msg, use_color=use_color)
+            ret = _parse_message(course=course, message=msg)
         except _InvalidMessage as error:
             if not continue_after_invalid_message:
                 raise
@@ -648,7 +644,7 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
                 del mbox[key]
         yield ret
 
-def _parse_message(course, message, use_color=None):
+def _parse_message(course, message):
     """Parse an incoming email and respond if neccessary.
 
     Return ``(msg, person, assignment, time)`` on successful parsing.
@@ -657,14 +653,12 @@ def _parse_message(course, message, use_color=None):
     original = message
     person = subject = target = None
     try:
-        person = _get_message_person(
-            course=course, message=message, use_color=use_color)
+        person = _get_message_person(course=course, message=message)
         if person.pgp_key:
             message = _get_decoded_message(
-                course=course, message=message, person=person,
-                use_color=use_color)
-        subject = _get_message_subject(message=message, use_color=use_color)
-        target = _get_message_target(subject=subject, use_color=use_color)
+                course=course, message=message, person=person)
+        subject = _get_message_subject(message=message)
+        target = _get_message_target(subject=subject)
     except _InvalidMessage as error:
         error.course = course
         error.message = original
@@ -677,7 +671,7 @@ def _parse_message(course, message, use_color=None):
         raise
     return (original, message, person, subject, target)
 
-def _get_message_person(course, message, use_color=None):
+def _get_message_person(course, message):
     sender = message['Return-Path']  # RFC 822
     if sender is None:
         raise NoReturnPath(message)
@@ -689,14 +683,13 @@ def _get_message_person(course, message, use_color=None):
         raise AmbiguousAddress(message=message, address=sender, people=people)
     return people[0]
 
-def _get_decoded_message(course, message, person, use_color=None):
-    msg = _get_verified_message(
-        message, person.pgp_key, use_color=use_color)
+def _get_decoded_message(course, message, person):
+    msg = _get_verified_message(message, person.pgp_key)
     if msg is None:
         raise _UnsignedMessage(message=message)
     return msg
 
-def _get_message_subject(message, use_color=None):
+def _get_message_subject(message):
     """
     >>> from email.header import Header
     >>> from pgp_mime.email import encodedMIMEText
@@ -732,7 +725,7 @@ def _get_message_subject(message, use_color=None):
     _LOG.debug('decoded header {} -> {}'.format(parts[0], subject))
     return subject.lower().replace('#', '')
 
-def _get_message_target(subject, use_color=None):
+def _get_message_target(subject):
     """
     >>> _get_message_target(subject='no tag')
     Traceback (most recent call last):
@@ -759,17 +752,16 @@ def _get_message_target(subject, use_color=None):
     _LOG.debug('extracted target {} -> {}'.format(subject, target))
     return target
 
-def _get_handler(handlers, target, use_color=None):
+def _get_handler(handlers, target):
     try:
         handler = handlers[target]
     except KeyError:
         response_subject = 'no handler for {}'.format(target)
-        highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
-        _LOG.debug(_color_string(string=response_subject, color=bad))
+        _LOG.warning(_color_string(string=response_subject))
         raise InvalidHandlerMessage(target=target, handlers=handlers)
     return handler
 
-def _get_verified_message(message, pgp_key, use_color=None):
+def _get_verified_message(message, pgp_key):
     """
 
     >>> from pgp_mime import sign, encodedMIMEText
@@ -819,16 +811,13 @@ def _get_verified_message(message, pgp_key, use_color=None):
     >>> print(_get_verified_message(message, pgp_key='4332B6E3'))
     None
     """
-    highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
     mid = message['message-id']
     try:
         decrypted,verified,result = _pgp_mime.verify(message=message)
     except (ValueError, AssertionError):
-        _LOG.warn(_color_string(
-                string='could not verify {} (not signed?)'.format(mid),
-                color=bad))
+        _LOG.warning('could not verify {} (not signed?)'.format(mid))
         return None
-    _LOG.info(_color_string(str(result, 'utf-8'), color=lowlight))
+    _LOG.debug(str(result, 'utf-8'))
     tree = _etree.fromstring(result.replace(b'\x00', b''))
     match = None
     for signature in tree.findall('.//signature'):
@@ -837,17 +826,13 @@ def _get_verified_message(message, pgp_key, use_color=None):
                 match = signature
                 break
     if match is None:
-        _LOG.warn(_color_string(
-                string='{} is not signed by the expected key'.format(mid),
-                color=bad))
+        _LOG.warning('{} is not signed by the expected key'.format(mid))
         return None
     if not verified:
         sumhex = list(signature.iterchildren('summary'))[0].get('value')
         summary = int(sumhex, 16)
         if summary != 0:
-            _LOG.warn(_color_string(
-                    string='{} has an unverified signature'.format(mid),
-                    color=bad))
+            _LOG.warning('{} has an unverified signature'.format(mid))
             return None
         # otherwise, we may have an untrusted key.  We'll count that
         # as verified here, because the caller is explicity looking

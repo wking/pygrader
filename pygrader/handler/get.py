@@ -14,8 +14,6 @@ import os.path as _os_path
 import pgp_mime as _pgp_mime
 
 from .. import LOG as _LOG
-from ..color import color_string as _color_string
-from ..color import standard_colors as _standard_colors
 from ..email import construct_text_email as _construct_text_email
 from ..email import construct_email as _construct_email
 from ..storage import assignment_path as _assignment_path
@@ -36,8 +34,7 @@ class InvalidStudent (_InvalidSubjectMessage):
 
 
 def run(basedir, course, message, person, subject,
-        trust_email_infrastructure=False,
-        use_color=None, dry_run=False, **kwargs):
+        trust_email_infrastructure=False, dry_run=False, **kwargs):
     """
     >>> from pgp_mime.email import encodedMIMEText
     >>> from ..model.grade import Grade
@@ -369,18 +366,16 @@ def run(basedir, course, message, person, subject,
         raise _UnsignedMessage()
     if 'assistants' in person.groups or 'professors' in person.groups:
         email = _get_admin_email(
-            basedir=basedir, course=course, person=person, subject=subject,
-            use_color=use_color)
+            basedir=basedir, course=course, person=person, subject=subject)
     elif 'students' in person.groups:
         email = _get_student_email(
-            basedir=basedir, course=course, person=person,
-            use_color=use_color)
+            basedir=basedir, course=course, person=person)
     else:
         raise NotImplementedError(
             'strange groups {} for {}'.format(person.groups, person))
     raise _Response(message=email)
 
-def _get_student_email(basedir, course, person, student=None, use_color=None):
+def _get_student_email(basedir, course, person, student=None):
     if student is None:
         student = person
         targets = None
@@ -408,7 +403,7 @@ def _get_student_email(basedir, course, person, student=None, use_color=None):
     return email
 
 def _get_student_submission_email(
-    basedir, course, person, assignments, student, use_color=None):
+    basedir, course, person, assignments, student):
     subject = '{} assignment submissions for {}'.format(
         course.name, student.name)
     text = '{}:\n  * {}\n'.format(
@@ -434,13 +429,14 @@ def _get_student_submission_email(
         author=course.robot, targets=[person], subject=subject,
         message=message)
 
-def _get_admin_email(basedir, course, person, subject, use_color=True):
+def _get_admin_email(basedir, course, person, subject):
     lsubject = subject.lower()
     students = [p for p in course.find_people()
                 if p.name.lower() in lsubject]
     if len(students) == 0:
         stream = _io.StringIO()
-        _tabulate(course=course, statistics=True, stream=stream)
+        _tabulate(
+            course=course, statistics=True, stream=stream, use_color=False)
         text = stream.getvalue()
         email = _construct_text_email(
             author=course.robot, targets=[person],
@@ -456,7 +452,7 @@ def _get_admin_email(basedir, course, person, subject, use_color=True):
         else:
             email = _get_student_submission_email(
                 basedir=basedir, course=course, person=person, student=student,
-                assignments=assignments, use_color=use_color)
+                assignments=assignments)
     else:
         raise InvalidStudent(students=students)
     return email

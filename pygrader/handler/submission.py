@@ -14,8 +14,7 @@ import os.path as _os_path
 import pgp_mime as _pgp_mime
 
 from .. import LOG as _LOG
-from ..color import color_string as _color_string
-from ..color import standard_colors as _standard_colors
+from ..color import GOOD_DEBUG as _GOOD_DEBUG
 from ..extract_mime import extract_mime as _extract_mime
 from ..extract_mime import message_time as _message_time
 from ..storage import assignment_path as _assignment_path
@@ -33,8 +32,8 @@ class InvalidAssignment (_InvalidMessage):
         self.assignment = assignment
 
 
-def run(basedir, course, message, person, subject,
-        max_late=0, use_color=None, dry_run=None, **kwargs):
+def run(basedir, course, message, person, subject, max_late=0, dry_run=None,
+        **kwargs):
     """
     >>> from pgp_mime.email import encodedMIMEText
     >>> from ..test.course import StubCourse
@@ -67,17 +66,16 @@ def run(basedir, course, message, person, subject,
 
     >>> course.cleanup()
     """
-    time = _message_time(message=message, use_color=use_color)
-    assignment = _get_assignment(
-        course=course, subject=subject, use_color=use_color)
+    time = _message_time(message=message)
+    assignment = _get_assignment(course=course, subject=subject)
     assignment_path = _assignment_path(basedir, assignment, person)
     _save_local_message_copy(
         msg=message, person=person, assignment_path=assignment_path,
-        use_color=use_color, dry_run=dry_run)
+        dry_run=dry_run)
     _extract_mime(message=message, output=assignment_path, dry_run=dry_run)
     _check_late(
         basedir=basedir, assignment=assignment, person=person, time=time,
-        max_late=max_late, use_color=use_color, dry_run=dry_run)
+        max_late=max_late, dry_run=dry_run)
     if time:
         time_str = 'on {}'.format(_formatdate(time))
     else:
@@ -92,7 +90,7 @@ def run(basedir, course, message, person, subject,
 def _match_assignment(assignment, subject):
     return assignment.name.lower() in subject.lower()
 
-def _get_assignment(course, subject, use_color):
+def _get_assignment(course, subject):
     assignments = [a for a in course.assignments
                    if _match_assignment(a, subject)]
     if len(assignments) != 1:
@@ -135,9 +133,7 @@ def _get_assignment(course, subject, use_color):
         raise InvalidAssignment(assignment)
     return assignments[0]
 
-def _save_local_message_copy(msg, person, assignment_path, use_color=None,
-                             dry_run=False):
-    highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
+def _save_local_message_copy(msg, person, assignment_path, dry_run=False):
     try:
         _os.makedirs(assignment_path)
     except OSError:
@@ -146,9 +142,7 @@ def _save_local_message_copy(msg, person, assignment_path, use_color=None,
     try:
         mbox = _mailbox.Maildir(mpath, factory=None, create=not dry_run)
     except _mailbox.NoSuchMailboxError as e:
-        _LOG.debug(_color_string(
-                string='could not open mailbox at {}'.format(mpath),
-                color=bad))
+        _LOG.warn('could not open mailbox at {}'.format(mpath))
         mbox = None
         new_msg = True
     else:
@@ -158,27 +152,21 @@ def _save_local_message_copy(msg, person, assignment_path, use_color=None,
                 new_msg = False
                 break
     if new_msg:
-        _LOG.debug(_color_string(
-                string='saving email from {} to {}'.format(
-                    person, assignment_path), color=good))
+        _LOG.log(_GOOD_DEBUG, 'saving email from {} to {}'.format(
+                person, assignment_path))
         if mbox is not None and not dry_run:
             mdmsg = _mailbox.MaildirMessage(msg)
             mdmsg.add_flag('S')
             mbox.add(mdmsg)
             mbox.close()
     else:
-        _LOG.debug(_color_string(
-                string='already found {} in {}'.format(
-                    msg['Message-ID'], mpath), color=good))
+        _LOG.log(_GOOD_DEBUG, 'already found {} in {}'.format(
+                    msg['Message-ID'], mpath))
 
-def _check_late(basedir, assignment, person, time, max_late=0, use_color=None,
-                dry_run=False):
-    highlight,lowlight,good,bad = _standard_colors(use_color=use_color)
+def _check_late(basedir, assignment, person, time, max_late=0, dry_run=False):
     if time > assignment.due + max_late:
         dt = time - assignment.due
-        _LOG.warn(_color_string(
-                string='{} {} late by {} seconds ({} hours)'.format(
-                    person.name, assignment.name, dt, dt/3600.),
-                color=bad))
+        _LOG.warning('{} {} late by {} seconds ({} hours)'.format(
+            person.name, assignment.name, dt, dt/3600.))
         if not dry_run:
             _set_late(basedir=basedir, assignment=assignment, person=person)

@@ -450,7 +450,7 @@ def construct_course_email(author, course, targets, cc=None):
     """
     target = join_with_and([t.alias() for t in targets])
     table = _io.StringIO()
-    _tabulate(course=course, statistics=True, stream=table)
+    _tabulate(course=course, statistics=True, stream=table, use_color=False)
     return _construct_text_email(
         author=author, targets=targets, cc=cc,
         subject='Course grades',

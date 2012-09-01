@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License along with
 # pygrader.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging as _logging
 import sys as _sys
 
 
@@ -22,6 +23,8 @@ _COLORS = [
     'black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
 
 USE_COLOR = True
+GOOD_DEBUG = _logging.DEBUG + 2
+BAD_DEBUG = _logging.DEBUG + 4
 
 
 def standard_colors(use_color=None):
@@ -97,3 +100,26 @@ def write_color(string, color=None, stream=None):
         stream = _sys.stdout
     stream.write(color_string(string=string, color=color))
     stream.flush()
+
+
+class ColoredFormatter (_logging.Formatter):
+    def __init__(self, *args, **kwargs):
+        super(ColoredFormatter, self).__init__(*args, **kwargs)
+        self.colored = None  # `None` to use USE_COLOR; True/False to override
+
+    def format(self, record):
+        s = super(ColoredFormatter, self).format(record)
+        if self.colored or (self.colored is None and USE_COLOR):
+            highlight,lowlight,good,bad = standard_colors()
+            if record.levelno <= _logging.DEBUG:
+                color = lowlight
+            elif record.levelno <= GOOD_DEBUG:
+                color = good
+            elif record.levelno <= BAD_DEBUG:
+                color = bad
+            elif record.levelno <= _logging.INFO:
+                color = highlight
+            else:
+                color = bad
+            return color_string(string=s, color=color)
+        return s

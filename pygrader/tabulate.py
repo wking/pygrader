@@ -25,7 +25,7 @@ from .color import standard_colors as _standard_colors
 from .color import write_color as _write_color
 
 
-def tabulate(course, statistics=False, stream=None, use_color=False, **kwargs):
+def tabulate(course, statistics=False, stream=None, use_color=None, **kwargs):
     """Return a table of student's grades to date
     """
     if stream is None:
