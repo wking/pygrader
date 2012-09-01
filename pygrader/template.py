@@ -46,14 +46,13 @@ Grades:
 {%- endfor %}
 
 Comments:
-{%- for grade in grades -%}
-{% if grade.comment %}
+{%- for grade in grades -%}{% if grade.comment %}
 
 {{ grade.assignment.name }}
 
 {{ grade.comment }}
-{%- endif %}
-{% endfor %}
+{%- endif %}{% endfor %}
+
 Yours,
 {{ author.alias() }}
 """.strip())
@@ -240,8 +239,8 @@ def construct_student_email(author, grades, cc=None):
     ...         points=int(points/2.0))
     ...     grades.append(grade)
     >>> msg = construct_student_email(author=author, grades=grades)
-    >>> print(msg.as_string())
-    ... # doctest: +REPORT_UDIFF, +ELLIPSIS, +NORMALIZE_WHITESPACE
+    >>> print(msg.as_string().replace('\\t', '  '))
+    ... # doctest: +REPORT_UDIFF, +ELLIPSIS
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
@@ -255,11 +254,10 @@ def construct_student_email(author, grades, cc=None):
     Jill,
     <BLANKLINE>
     Grades:
-      * Exam 1:\t5 out of 10 available points.
-      * Homework 1:\t1 out of 3 available points.
+      * Exam 1:  5 out of 10 available points.
+      * Homework 1:  1 out of 3 available points.
     <BLANKLINE>
     Comments:
-    <BLANKLINE>
     <BLANKLINE>
     Yours,
     Jack
@@ -267,8 +265,8 @@ def construct_student_email(author, grades, cc=None):
     >>> grades[0].comment = ('Bla bla bla.  '*20).strip()
     >>> grades[1].comment = ('Hello world')
     >>> msg = construct_student_email(author=author, grades=grades)
-    >>> print(msg.as_string())
-    ... # doctest: +REPORT_UDIFF, +ELLIPSIS, +NORMALIZE_WHITESPACE
+    >>> print(msg.as_string().replace('\\t', '  '))
+    ... # doctest: +REPORT_UDIFF, +ELLIPSIS
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
@@ -282,8 +280,8 @@ def construct_student_email(author, grades, cc=None):
     Jill,
     <BLANKLINE>
     Grades:
-      * Exam 1:\t5 out of 10 available points.
-      * Homework 1:\t1 out of 3 available points.
+      * Exam 1:  5 out of 10 available points.
+      * Homework 1:  1 out of 3 available points.
     <BLANKLINE>
     Comments:
     <BLANKLINE>
@@ -291,15 +289,39 @@ def construct_student_email(author, grades, cc=None):
     <BLANKLINE>
     Hello world
     <BLANKLINE>
+    Homework 1
     <BLANKLINE>
+    Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.
+    <BLANKLINE>
+    Yours,
+    Jack
+
+    >>> grades[0].comment = 'Work harder!'
+    >>> grades[1].comment = None
+    >>> msg = construct_student_email(author=author, grades=grades)
+    >>> print(msg.as_string().replace('\\t', '  '))
+    ... # doctest: +REPORT_UDIFF, +ELLIPSIS
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    Date: ...
+    From: Jack <a@b.net>
+    Reply-to: Jack <a@b.net>
+    To: Jill <c@d.net>
+    Subject: Your grade
+    <BLANKLINE>
+    Jill,
+    <BLANKLINE>
+    Grades:
+      * Exam 1:  5 out of 10 available points.
+      * Homework 1:  1 out of 3 available points.
+    <BLANKLINE>
+    Comments:
     <BLANKLINE>
     Homework 1
     <BLANKLINE>
-    Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla
-    bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla
-    bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.  Bla bla bla.
-    Bla bla bla.  Bla bla bla.  Bla bla bla.
-    <BLANKLINE>
+    Work harder!
     <BLANKLINE>
     Yours,
     Jack
@@ -353,8 +375,8 @@ def construct_course_email(author, course, targets, cc=None):
     ...     assignments=assignments, people=[student], grades=grades)
     >>> msg = construct_course_email(
     ...     author=author, course=course, targets=[prof])
-    >>> print(msg.as_string())
-    ... # doctest: +REPORT_UDIFF, +ELLIPSIS, +NORMALIZE_WHITESPACE
+    >>> print(msg.as_string().replace('\\t', '  '))
+    ... # doctest: +REPORT_UDIFF, +ELLIPSIS
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
@@ -369,15 +391,15 @@ def construct_course_email(author, course, targets, cc=None):
     <BLANKLINE>
     Here are the (tab delimited) course grades to date:
     <BLANKLINE>
-    Student\tExam 1\tHomework 1\tTotal
-    Jill\t5\t1\t0.416...
+    Student  Exam 1  Homework 1  Total
+    Jill  5  1  0.416...
     --
-    Mean\t5.00\t1.00\t0.416...
-    Std. Dev.\t0.00\t0.00\t0.0
+    Mean  5.00  1.00  0.416...
+    Std. Dev.  0.00  0.00  0.0
     <BLANKLINE>
     The available points (and weights) for each assignment are:
-      * Exam 1:\t10\t0.5
-      * Homework 1:\t3\t0.5
+      * Exam 1:  10  0.5
+      * Homework 1:  3  0.5
     <BLANKLINE>
     Yours,
     Jack
