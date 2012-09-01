@@ -24,6 +24,79 @@ from . import respond as _respond
 def run(basedir, course, original, message, person, subject,
         max_late=0, respond=None, use_color=None,
         dry_run=None):
+    """
+    >>> from pgp_mime.email import encodedMIMEText
+    >>> from pygrader.test.course import StubCourse
+    >>> course = StubCourse()
+    >>> person = list(
+    ...     course.course.find_people(email='bb@greyhavens.net'))[0]
+    >>> message = encodedMIMEText('The answer is 42.')
+    >>> message['Message-ID'] = '<123.456@home.net>'
+    >>> message['Received'] = (
+    ...     'from smtp.home.net (smtp.home.net [123.456.123.456]) '
+    ...     'by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF '
+    ...     'for <wking@tremily.us>; Sun, 09 Oct 2011 11:50:46 -0400 (EDT)')
+    >>> subject = '[submit] assignment 1'
+    >>> def respond(message):
+    ...     print('respond with:\\n{}'.format(message.as_string()))
+    >>> run(basedir=course.basedir, course=course.course, original=message,
+    ...     message=message, person=person, subject=subject,
+    ...     max_late=0, respond=respond)
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
+    respond with:
+    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    MIME-Version: 1.0
+    Content-Disposition: inline
+    Date: ...
+    From: Robot101 <phys101@tower.edu>
+    Reply-to: Robot101 <phys101@tower.edu>
+    To: Bilbo Baggins <bb@shire.org>
+    Subject: received Assignment 1 submission
+    <BLANKLINE>
+    --===============...==
+    Content-Type: multipart/mixed; boundary="===============...=="
+    MIME-Version: 1.0
+    <BLANKLINE>
+    --===============...==
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    <BLANKLINE>
+    Billy,
+    <BLANKLINE>
+    We received your submission for Assignment 1 on ....
+    <BLANKLINE>
+    Yours,
+    phys-101 robot
+    --===============...==
+    Content-Type: message/rfc822
+    MIME-Version: 1.0
+    <BLANKLINE>
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    Message-ID: <123.456@home.net>
+    Received: from smtp.home.net (smtp.home.net [123.456.123.456]) by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF for <wking@tremily.us>; Sun, 09 Oct 2011 11:50:46 -0400 (EDT)
+    <BLANKLINE>
+    The answer is 42.
+    --===============...==--
+    --===============...==
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Description: OpenPGP digital signature
+    Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
+    <BLANKLINE>
+    -----BEGIN PGP SIGNATURE-----
+    Version: GnuPG v2.0.19 (GNU/Linux)
+    <BLANKLINE>
+    ...
+    -----END PGP SIGNATURE-----
+    <BLANKLINE>
+    --===============...==--
+    >>> course.cleanup()
+    """
     time = _message_time(message=message, use_color=use_color)
 
     for assignment in course.assignments:
