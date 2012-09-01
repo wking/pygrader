@@ -675,13 +675,11 @@ def _get_message_subject(course, message, original, person,
     ValueError: no subject in msg-id
     >>> del message['Subject']
     >>> subject = Header('unicode part', 'utf-8')
-    >>> subject.append('ascii part', 'ascii')
+    >>> subject.append('-ascii part', 'ascii')
     >>> message['Subject'] = subject.encode()
     >>> _get_message_subject(
     ...     course=None, message=message, original=message, person=None)
-    Traceback (most recent call last):
-      ...
-    ValueError: multi-part header [(b'unicode part', 'utf-8'), (b'ascii part', None)]
+    'unicode part-ascii part'
     >>> del message['Subject']
     >>> message['Subject'] = 'clean subject'
     >>> _get_message_subject(
@@ -701,13 +699,14 @@ def _get_message_subject(course, message, original, person,
         raise ValueError(response_subject)
 
     parts = _decode_header(message['Subject'])
-    if len(parts) != 1:
-        raise ValueError('multi-part header {}'.format(parts))
-    subject,encoding = parts[0]
-    if encoding is None:
-        encoding = 'ascii'
-    if not isinstance(subject, str):
-        subject = str(subject, encoding)
+    part_strings = []
+    for string,encoding in parts:
+        if encoding is None:
+            encoding = 'ascii'
+        if not isinstance(string, str):
+            string = str(string, encoding)
+        part_strings.append(string)
+    subject = ''.join(part_strings)
     _LOG.debug('decoded header {} -> {}'.format(parts[0], subject))
     return subject.lower().replace('#', '')
 
