@@ -33,7 +33,7 @@ class InvalidAssignment (_InvalidMessage):
         self.assignment = assignment
 
 
-def run(basedir, course, original, message, person, subject,
+def run(basedir, course, message, person, subject,
         max_late=0, use_color=None, dry_run=None, **kwargs):
     """
     >>> from pgp_mime.email import encodedMIMEText
@@ -50,9 +50,8 @@ def run(basedir, course, original, message, person, subject,
     ...     'for <wking@tremily.us>; Sun, 09 Oct 2011 11:50:46 -0400 (EDT)')
     >>> subject = '[submit] assignment 1'
     >>> try:
-    ...     run(basedir=course.basedir, course=course.course, original=message,
-    ...         message=message, person=person, subject=subject,
-    ...         max_late=0)
+    ...     run(basedir=course.basedir, course=course.course, message=message,
+    ...         person=person, subject=subject, max_late=0)
     ... except Response as e:
     ...     print('respond with:')
     ...     print(e.message.as_string())

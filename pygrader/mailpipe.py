@@ -562,8 +562,8 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
         try:
             handler = _get_handler(handlers=handlers, target=target)
             handler(
-                basedir=basedir, course=course, original=original,
-                message=message, person=person, subject=subject,
+                basedir=basedir, course=course, message=message,
+                person=person, subject=subject,
                 max_late=max_late, use_color=use_color, dry_run=dry_run)
         except _InvalidMessage as error:
             if not continue_after_invalid_message:

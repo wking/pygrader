@@ -35,7 +35,7 @@ class InvalidStudent (_InvalidSubjectMessage):
         self.students = students
 
 
-def run(basedir, course, original, message, person, subject,
+def run(basedir, course, message, person, subject,
         trust_email_infrastructure=False,
         use_color=None, dry_run=False, **kwargs):
     """
@@ -61,8 +61,8 @@ def run(basedir, course, original, message, person, subject,
     Unauthenticated messages are refused by default.
 
     >>> process(
-    ...     basedir=course.basedir, course=course.course, original=message,
-    ...     message=message, person=person, subject='[get]', max_late=0)
+    ...     basedir=course.basedir, course=course.course, message=message,
+    ...     person=person, subject='[get]', max_late=0)
     UnsignedMessage error:
     unsigned message
 
@@ -79,8 +79,8 @@ def run(basedir, course, original, message, person, subject,
     Students without grades get a reasonable response.
 
     >>> process(
-    ...     basedir=course.basedir, course=course.course, original=message,
-    ...     message=message, person=person, subject='[get]', max_late=0,
+    ...     basedir=course.basedir, course=course.course, message=message,
+    ...     person=person, subject='[get]', max_late=0,
     ...     trust_email_infrastructure=True)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
@@ -94,8 +94,8 @@ def run(basedir, course, original, message, person, subject,
 
     >>> message.authenticated = True
     >>> process(
-    ...     basedir=course.basedir, course=course.course, original=message,
-    ...     message=message, person=person, subject='[get]', max_late=0)
+    ...     basedir=course.basedir, course=course.course, message=message,
+    ...     person=person, subject='[get]', max_late=0)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
     Content-Type: text/plain; charset="us-ascii"
@@ -125,9 +125,8 @@ def run(basedir, course, original, message, person, subject,
     ...     points=10, comment='Looks good.')
     >>> course.course.grades.append(grade)
     >>> process(
-    ...     basedir=course.basedir, course=course.course, original=message,
-    ...     message=message, person=person, subject='[get]',
-    ...     max_late=0)
+    ...     basedir=course.basedir, course=course.course, message=message,
+    ...     person=person, subject='[get]', max_late=0)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
@@ -181,9 +180,8 @@ def run(basedir, course, original, message, person, subject,
     ...     course.course.find_people(email='eye@tower.edu'))[0]
     >>> person.pgp_key = None
     >>> process(
-    ...     basedir=course.basedir, course=course.course, original=message,
-    ...     message=message, person=person, subject='[get]',
-    ...     max_late=0)
+    ...     basedir=course.basedir, course=course.course, message=message,
+    ...     person=person, subject='[get]', max_late=0)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
@@ -224,9 +222,8 @@ def run(basedir, course, original, message, person, subject,
     They can also request grades for a particular student.
 
     >>> process(
-    ...     basedir=course.basedir, course=course.course, original=message,
-    ...     message=message, person=person,
-    ...     subject='[get] {}'.format(student.name),
+    ...     basedir=course.basedir, course=course.course, message=message,
+    ...     person=person, subject='[get] {}'.format(student.name),
     ...     max_late=0)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
@@ -288,7 +285,7 @@ def run(basedir, course, original, message, person, subject,
     >>> try:
     ...     _handle_submission(
     ...         basedir=course.basedir, course=course.course,
-    ...         original=submission, message=submission, person=student,
+    ...         message=submission, person=student,
     ...         subject='[submit] Assignment 1')
     ... except _Response:
     ...     pass
@@ -296,8 +293,8 @@ def run(basedir, course, original, message, person, subject,
     Now lets request the submissions.
 
     >>> process(
-    ...     basedir=course.basedir, course=course.course, original=message,
-    ...     message=message, person=person,
+    ...     basedir=course.basedir, course=course.course, message=message,
+    ...     person=person,
     ...     subject='[get] {}, {}'.format(student.name, 'Assignment 1'),
     ...     max_late=0)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
@@ -366,24 +363,24 @@ def run(basedir, course, original, message, person, subject,
     if trust_email_infrastructure:
         authenticated = True
     else:
-        authenticated = hasattr(message, 'authenticated') and message.authenticated
+        authenticated = (
+            hasattr(message, 'authenticated') and message.authenticated)
     if not authenticated:
         raise _UnsignedMessage()
     if 'assistants' in person.groups or 'professors' in person.groups:
         email = _get_admin_email(
-            basedir=basedir, course=course, original=original,
-            person=person, subject=subject, use_color=use_color)
+            basedir=basedir, course=course, person=person, subject=subject,
+            use_color=use_color)
     elif 'students' in person.groups:
         email = _get_student_email(
-            basedir=basedir, course=course, original=original,
-            person=person, use_color=use_color)
+            basedir=basedir, course=course, person=person,
+            use_color=use_color)
     else:
         raise NotImplementedError(
             'strange groups {} for {}'.format(person.groups, person))
     raise _Response(message=email)
 
-def _get_student_email(basedir, course, original, person, student=None,
-                       use_color=None):
+def _get_student_email(basedir, course, person, student=None, use_color=None):
     if student is None:
         student = person
         targets = None
@@ -411,7 +408,7 @@ def _get_student_email(basedir, course, original, person, student=None,
     return email
 
 def _get_student_submission_email(
-    basedir, course, original, person, assignments, student, use_color=None):
+    basedir, course, person, assignments, student, use_color=None):
     subject = '{} assignment submissions for {}'.format(
         course.name, student.name)
     text = '{}:\n  * {}\n'.format(
@@ -437,8 +434,7 @@ def _get_student_submission_email(
         author=course.robot, targets=[person], subject=subject,
         message=message)
 
-def _get_admin_email(basedir, course, original, person, subject,
-                     use_color=None):
+def _get_admin_email(basedir, course, person, subject, use_color=True):
     lsubject = subject.lower()
     students = [p for p in course.find_people()
                 if p.name.lower() in lsubject]
@@ -456,13 +452,11 @@ def _get_admin_email(basedir, course, original, person, subject,
                        if a.name.lower() in lsubject]
         if len(assignments) == 0:
             email = _get_student_email(
-                basedir=basedir, course=course, original=original,
-                person=person, student=student, use_color=use_color)
+                basedir=basedir, course=course, person=person, student=student)
         else:
             email = _get_student_submission_email(
-                basedir=basedir, course=course, original=original,
-                person=person, student=student, assignments=assignments,
-                use_color=use_color)
+                basedir=basedir, course=course, person=person, student=student,
+                assignments=assignments, use_color=use_color)
     else:
         raise InvalidStudent(students=students)
     return email
