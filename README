@@ -159,14 +159,25 @@ Processing submissions
 
 As the due date approaches, student submissions will start arriving in
 your inbox.  Use ``pg.py``'s ``mailpipe`` command to sort them into
-directories.  This will also extract any files that were attached to
-the emails and place them in that persons assignment directory::
+directories (using the ``pygrader.handler.submission`` handler).  This
+will also extract any files that were attached to the emails and place
+them in that persons assignment directory::
 
   $ pg.py -d test mailpipe -m maildir -i ~/.maildir -o ./mail-old
 
 Use ``pg.py``'s ``todo`` command to check for ungraded submissions::
 
   $ pg.py -d test todo mail grade
+
+Then create ``grade`` files using your favorite editor.  The first
+line of the grade file should be the student's grade for that
+assigment, expressed in a syntax that Python's ``float()`` understands
+(``1``, ``95``, ``2.5``, ``6.022e23``, etc.).  If you wish, you may
+add additional comment lines after the grade line, offering
+suggestions for improvement, etc.  This comment (if present) will be
+mailed to the student along with the grade itself.  There are a number
+of example grade files in the ``test`` directory in ``pygrader``'s Git
+source.
 
 To see how everyone's doing, you can print a table of grades with
 ``pg.py``'s ``tabulate`` command::
@@ -177,6 +188,46 @@ When you want to notify students of their grades, you can send them
 all out with ``pg.py``'s ``email`` command::
 
   $ pg.py -d test email assignment 'Exam 1'
+
+Mailpipe details
+~~~~~~~~~~~~~~~~
+
+Mailpipe is the most complicated part of ``pygrader``, and the place
+where things are most likely to get sticky.  Since there are several
+
+If you get tired of filtering your inbox by hand using ``pg.py
+mailpipe``, you can (depending on how your mail delivery is setup) use
+procmail_ to automatically run ``mailpipe`` automatically on incoming
+email.  There is an example ``.procmailrc`` in the
+``pygrader.mailpipe.mailpipe`` docstring that runs ``mailpipe``
+whenever incoming emails have ``[phys160:submit]`` in their subject
+somewhere.
+
+The use of ``[TARGET]`` tags in the email subject allows users to
+unambiguously specify the purpose of their email.  Currently supported
+targets include (see the ``handlers`` argument to
+``pygrader.mailpipe``):
+
+``submit``
+  student assignment submission.  The remainder of the email subject
+  should include the case insensitive name of the assignment being
+  submitted (see ``pygrader.handler.submission._match_assignment``).
+  An example subject would be::
+
+    [submit] assignment 1
+
+To allow you to easily sort the email, you can also prefix the target
+with additional information (see
+``pygrader.mailpipe._get_message_target``).  For example, if you were
+running several courses from the same email account, you'd want a way
+for users to specify which course they were interacting with so you
+could filter appropriately in your procmail rules.  Everything in the
+subject tag before an optional semicolon is ignored by ``mailpipe``,
+so the following subjects will be handled identically::
+
+  [submit] assignment 1
+  [phys101:submit] assignment 1
+  [phys101:section2:submit] assignment 1
 
 Testing
 =======
@@ -220,6 +271,7 @@ using graphical interfaces.
 .. _homepage: http://blog.tremily.us/posts/pygrader/
 .. _SMTP: http://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol
 .. _GnuPG: http://www.gnupg.org/
+.. _procmail: http://www.procmail.org/
 .. _nose: http://readthedocs.org/docs/nose/en/latest/
 .. _GNU General Public License Version 3: http://www.gnu.org/licenses/gpl.html
 .. _Alex Heitzmann's pygrade: http://code.google.com/p/pygrade/
