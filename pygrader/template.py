@@ -38,7 +38,7 @@ Yours,
 #{{ grade.comment|wordwrap }}
 
 STUDENT_TEMPLATE = Template("""
-{{ grades[0].student.alias() }},
+{{ target }},
 
 Grades:
 {%- for grade in grades %}
@@ -71,8 +71,6 @@ The available points (and weights) for each assignment are:
 Yours,
 {{ author.alias() }}
 """.strip())
-
-
 
 
 class NotifiedCallback (object):
@@ -207,7 +205,7 @@ def student_email(basedir, author, course, student=None, cc=None, old=False,
         smtp=smtp, use_color=use_color, debug_target=debug_target,
         dry_run=dry_run)
 
-def _student_email(basedir, author, course, student=None, cc=None, old=False):
+def _student_email(basedir, author, course, student=None, targets=None, cc=None, old=False):
     """Iterate through composed student `Message`\s
     """
     if student:
@@ -220,15 +218,19 @@ def _student_email(basedir, author, course, student=None, cc=None, old=False):
             grades = [g for g in grades if not g.notified]
         if not grades:
             continue
-        yield (construct_student_email(author=author, grades=grades, cc=cc),
+        yield (construct_student_email(
+                author=author, course=course, grades=grades, targets=targets,
+                cc=cc),
                NotifiedCallback(basedir=basedir, grades=grades))
 
-def construct_student_email(author, grades, cc=None):
+def construct_student_email(author, course, grades, targets=None, cc=None):
     """Construct a `Message` notfiying a student of `grade`
 
     >>> from pygrader.model.person import Person
     >>> from pygrader.model.assignment import Assignment
+    >>> from pygrader.model.course import Course
     >>> from pygrader.model.grade import Grade
+    >>> course = Course(name='Physics 101')
     >>> author = Person(name='Jack', emails=['a@b.net'])
     >>> student = Person(name='Jill', emails=['c@d.net'])
     >>> grades = []
@@ -238,7 +240,8 @@ def construct_student_email(author, grades, cc=None):
     ...         student=student, assignment=assignment,
     ...         points=int(points/2.0))
     ...     grades.append(grade)
-    >>> msg = construct_student_email(author=author, grades=grades)
+    >>> msg = construct_student_email(
+    ...     author=author, course=course, grades=grades)
     >>> print(msg.as_string().replace('\\t', '  '))
     ... # doctest: +REPORT_UDIFF, +ELLIPSIS
     Content-Type: text/plain; charset="us-ascii"
@@ -249,7 +252,7 @@ def construct_student_email(author, grades, cc=None):
     From: Jack <a@b.net>
     Reply-to: Jack <a@b.net>
     To: Jill <c@d.net>
-    Subject: Your grade
+    Subject: Physics 101 grades
     <BLANKLINE>
     Jill,
     <BLANKLINE>
@@ -264,7 +267,8 @@ def construct_student_email(author, grades, cc=None):
 
     >>> grades[0].comment = ('Bla bla bla.  '*20).strip()
     >>> grades[1].comment = ('Hello world')
-    >>> msg = construct_student_email(author=author, grades=grades)
+    >>> msg = construct_student_email(
+    ...     author=author, course=course, grades=grades)
     >>> print(msg.as_string().replace('\\t', '  '))
     ... # doctest: +REPORT_UDIFF, +ELLIPSIS
     Content-Type: text/plain; charset="us-ascii"
@@ -275,7 +279,7 @@ def construct_student_email(author, grades, cc=None):
     From: Jack <a@b.net>
     Reply-to: Jack <a@b.net>
     To: Jill <c@d.net>
-    Subject: Your grade
+    Subject: Physics 101 grades
     <BLANKLINE>
     Jill,
     <BLANKLINE>
@@ -298,7 +302,8 @@ def construct_student_email(author, grades, cc=None):
 
     >>> grades[0].comment = 'Work harder!'
     >>> grades[1].comment = None
-    >>> msg = construct_student_email(author=author, grades=grades)
+    >>> msg = construct_student_email(
+    ...     author=author, course=course, grades=grades)
     >>> print(msg.as_string().replace('\\t', '  '))
     ... # doctest: +REPORT_UDIFF, +ELLIPSIS
     Content-Type: text/plain; charset="us-ascii"
@@ -309,9 +314,41 @@ def construct_student_email(author, grades, cc=None):
     From: Jack <a@b.net>
     Reply-to: Jack <a@b.net>
     To: Jill <c@d.net>
-    Subject: Your grade
+    Subject: Physics 101 grades
     <BLANKLINE>
     Jill,
+    <BLANKLINE>
+    Grades:
+      * Exam 1:  5 out of 10 available points.
+      * Homework 1:  1 out of 3 available points.
+    <BLANKLINE>
+    Comments:
+    <BLANKLINE>
+    Homework 1
+    <BLANKLINE>
+    Work harder!
+    <BLANKLINE>
+    Yours,
+    Jack
+
+    You can also send the student grades to alternative targets:
+
+    >>> prof = Person(name='H.D.', emails=['hd@wall.net'])
+    >>> msg = construct_student_email(
+    ...     author=author, course=course, grades=grades, targets=[prof])
+    >>> print(msg.as_string().replace('\\t', '  '))
+    ... # doctest: +REPORT_UDIFF, +ELLIPSIS
+    Content-Type: text/plain; charset="us-ascii"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Disposition: inline
+    Date: ...
+    From: Jack <a@b.net>
+    Reply-to: Jack <a@b.net>
+    To: "H.D." <hd@wall.net>
+    Subject: Physics 101 grades for Jill
+    <BLANKLINE>
+    H.D.,
     <BLANKLINE>
     Grades:
       * Exam 1:  5 out of 10 available points.
@@ -328,10 +365,17 @@ def construct_student_email(author, grades, cc=None):
     """
     students = set(g.student for g in grades)
     assert len(students) == 1, students
+    student = students.pop()
+    subject = '{} grades'.format(course.name)
+    if not targets:
+        targets = [student]
+    else:
+        subject += ' for {}'.format(student.name)
+    target = join_with_and([t.alias() for t in targets])
     return _construct_email(
-        author=author, targets=[grades[0].student], cc=cc,
-        subject='Your grade',
-        text=STUDENT_TEMPLATE.render(author=author, grades=sorted(grades)))
+        author=author, targets=targets, cc=cc, subject=subject,
+        text=STUDENT_TEMPLATE.render(
+            author=author, target=target, grades=sorted(grades)))
 
 def course_email(basedir, author, course, targets, assignment=None,
                  student=None, cc=None, smtp=None, use_color=False,
