@@ -808,6 +808,10 @@ def _get_verified_message(message, pgp_key, use_color=None):
     We check that the message is signed, and that it is signed by the
     appropriate key.
 
+    >>> signed.authenticated
+    Traceback (most recent call last):
+      ...
+    AttributeError: 'MIMEMultipart' object has no attribute 'authenticated'
     >>> our_message = _get_verified_message(signed, pgp_key='4332B6E3')
     >>> print(our_message.as_string())  # doctest: +REPORT_UDIFF
     Content-Type: text/plain; charset="us-ascii"
@@ -819,6 +823,8 @@ def _get_verified_message(message, pgp_key, use_color=None):
     Received: from smtp.home.net ...
     <BLANKLINE>
     1.23 joules
+    >>> our_message.authenticated
+    True
 
     If it is signed, but not by the right key, we get ``None``.
 
@@ -869,4 +875,5 @@ def _get_verified_message(message, pgp_key, use_color=None):
                              'content-disposition',
                              ]:
             decrypted[k] = v
+    decrypted.authenticated = True
     return decrypted
