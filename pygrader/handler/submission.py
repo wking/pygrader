@@ -23,7 +23,7 @@ from . import respond as _respond
 
 def run(basedir, course, original, message, person, subject,
         max_late=0, respond=None, use_color=None,
-        dry_run=None):
+        dry_run=None, **kwargs):
     """
     >>> from pgp_mime.email import encodedMIMEText
     >>> from pygrader.test.course import StubCourse
@@ -164,7 +164,7 @@ def run(basedir, course, original, message, person, subject,
         max_late=max_late, use_color=use_color, dry_run=dry_run)
 
 def _match_assignment(assignment, subject):
-    return assignment.name.lower() in subject
+    return assignment.name.lower() in subject.lower()
 
 def _save_local_message_copy(msg, person, assignment_path, use_color=None,
                              dry_run=False):
