@@ -155,8 +155,9 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     You can send receipts to the acknowledge incoming messages, which
     includes warnings about dropped messages (except for messages
     without ``Return-Path`` and messages where the ``Return-Path``
-    email belongs to multiple ``People``.  Both of these cases should
-    only come from problems with pygrader configuration).
+    email belongs to multiple ``People``.  The former should only
+    occur with malicious emails, and the latter with improper pygrader
+    configurations).
 
     Response to a successful submission:
 
