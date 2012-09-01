@@ -16,38 +16,55 @@ import pgp_mime as _pgp_mime
 from .. import LOG as _LOG
 from ..color import color_string as _color_string
 from ..color import standard_colors as _standard_colors
+from ..email import construct_text_email as _construct_text_email
 from ..email import construct_email as _construct_email
-from ..email import _construct_email as _raw_construct_email
 from ..storage import assignment_path as _assignment_path
 from ..tabulate import tabulate as _tabulate
 from ..template import _student_email as _student_email
-from . import respond as _respond
+from . import InvalidMessage as _InvalidMessage
+from . import InvalidSubjectMessage as _InvalidSubjectMessage
+from . import Response as _Response
+from . import UnsignedMessage as _UnsignedMessage
+
+
+class InvalidStudent (_InvalidSubjectMessage):
+    def __init__(self, students=None, **kwargs):
+        if 'error' not in kwargs:
+            kwargs['error'] = 'Subject matches multiple students'
+        super(InvalidStudent, self).__init__(kwargs)
+        self.students = students
 
 
 def run(basedir, course, original, message, person, subject,
-        trust_email_infrastructure=False, respond=None,
+        trust_email_infrastructure=False,
         use_color=None, dry_run=False, **kwargs):
     """
     >>> from pgp_mime.email import encodedMIMEText
-    >>> from pygrader.model.grade import Grade
-    >>> from pygrader.test.course import StubCourse
+    >>> from ..model.grade import Grade
+    >>> from ..test.course import StubCourse
+    >>> from . import InvalidMessage, Response
     >>> course = StubCourse()
     >>> person = list(
     ...     course.course.find_people(email='bb@greyhavens.net'))[0]
     >>> message = encodedMIMEText('This text is not important.')
     >>> message['Message-ID'] = '<123.456@home.net>'
-    >>> def respond(message):
-    ...     print('respond with:\\n{}'.format(
-    ...             message.as_string().replace('\\t', '  ')))
+    >>> def process(**kwargs):
+    ...     try:
+    ...         run(**kwargs)
+    ...     except Response as response:
+    ...         print('respond with:')
+    ...         print(response.message.as_string().replace('\\t', '  '))
+    ...     except InvalidMessage as error:
+    ...         print('{} error:'.format(type(error).__name__))
+    ...         print(error)
 
     Unauthenticated messages are refused by default.
 
-    >>> run(basedir=course.basedir, course=course.course, original=message,
-    ...     message=message, person=person, subject='[get]',
-    ...     max_late=0, respond=respond)
-    Traceback (most recent call last):
-      ...
-    ValueError: must request information in a signed email
+    >>> process(
+    ...     basedir=course.basedir, course=course.course, original=message,
+    ...     message=message, person=person, subject='[get]', max_late=0)
+    UnsignedMessage error:
+    unsigned message
 
     Although you can process them by setting the
     ``trust_email_infrastructure`` option.  This might not be too
@@ -59,77 +76,35 @@ def run(basedir, course, original, message, person, subject,
     sysadmins is considered unacceptable, you've can only email users
     who have registered PGP keys.
 
-    >>> run(basedir=course.basedir, course=course.course, original=message,
-    ...     message=message, person=person, subject='[get]',
-    ...     max_late=0, trust_email_infrastructure=True, respond=respond)
-    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
-    Traceback (most recent call last):
-      ...
-    ValueError: no grades for <Person Bilbo Baggins>
-
     Students without grades get a reasonable response.
 
-    >>> message.authenticated = True
-    >>> try:
-    ...     run(basedir=course.basedir, course=course.course, original=message,
-    ...         message=message, person=person, subject='[get]',
-    ...         max_late=0, respond=respond)
-    ... except ValueError as error:
-    ...     print('\\ngot error: {}'.format(error))
+    >>> process(
+    ...     basedir=course.basedir, course=course.course, original=message,
+    ...     message=message, person=person, subject='[get]', max_late=0,
+    ...     trust_email_infrastructure=True)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
-    MIME-Version: 1.0
-    Content-Disposition: inline
-    Date: ...
-    From: Robot101 <phys101@tower.edu>
-    Reply-to: Robot101 <phys101@tower.edu>
-    To: Bilbo Baggins <bb@shire.org>
-    Subject: no grades for Billy
-    <BLANKLINE>
-    --===============...==
-    Content-Type: multipart/mixed; boundary="===============...=="
-    MIME-Version: 1.0
-    <BLANKLINE>
-    --===============...==
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
     Content-Disposition: inline
-    <BLANKLINE>
-    Billy,
+    Subject: No grades for Billy
     <BLANKLINE>
     We don't have any of your grades on file for this course.
-    <BLANKLINE>
-    Yours,
-    phys-101 robot
-    --===============...==
-    Content-Type: message/rfc822
-    MIME-Version: 1.0
-    <BLANKLINE>
+
+    >>> message.authenticated = True
+    >>> process(
+    ...     basedir=course.basedir, course=course.course, original=message,
+    ...     message=message, person=person, subject='[get]', max_late=0)
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
+    respond with:
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
     Content-Disposition: inline
-    Message-ID: <123.456@home.net>
+    Subject: No grades for Billy
     <BLANKLINE>
-    This text is not important.
-    --===============...==--
-    --===============...==
-    MIME-Version: 1.0
-    Content-Transfer-Encoding: 7bit
-    Content-Description: OpenPGP digital signature
-    Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
-    <BLANKLINE>
-    -----BEGIN PGP SIGNATURE-----
-    Version: GnuPG v2.0.19 (GNU/Linux)
-    <BLANKLINE>
-    ...
-    -----END PGP SIGNATURE-----
-    <BLANKLINE>
-    --===============...==--
-    <BLANKLINE>
-    got error: no grades for <Person Bilbo Baggins>
+    We don't have any of your grades on file for this course.
 
     Once we add a grade, they get details on all their grades for the
     course.
@@ -149,9 +124,10 @@ def run(basedir, course, original, message, person, subject,
     ...     assignment=course.course.assignment('Assignment 1'),
     ...     points=10, comment='Looks good.')
     >>> course.course.grades.append(grade)
-    >>> run(basedir=course.basedir, course=course.course, original=message,
+    >>> process(
+    ...     basedir=course.basedir, course=course.course, original=message,
     ...     message=message, person=person, subject='[get]',
-    ...     max_late=0, respond=respond)
+    ...     max_late=0)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
@@ -204,9 +180,10 @@ def run(basedir, course, original, message, person, subject,
     >>> person = list(
     ...     course.course.find_people(email='eye@tower.edu'))[0]
     >>> person.pgp_key = None
-    >>> run(basedir=course.basedir, course=course.course, original=message,
+    >>> process(
+    ...     basedir=course.basedir, course=course.course, original=message,
     ...     message=message, person=person, subject='[get]',
-    ...     max_late=0, respond=respond)
+    ...     max_late=0)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
@@ -246,10 +223,11 @@ def run(basedir, course, original, message, person, subject,
 
     They can also request grades for a particular student.
 
-    >>> run(basedir=course.basedir, course=course.course, original=message,
+    >>> process(
+    ...     basedir=course.basedir, course=course.course, original=message,
     ...     message=message, person=person,
     ...     subject='[get] {}'.format(student.name),
-    ...     max_late=0, respond=respond)
+    ...     max_late=0)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
@@ -307,17 +285,21 @@ def run(basedir, course, original, message, person, subject,
     ...     'from smtp.home.net (smtp.home.net [123.456.123.456]) '
     ...     'by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF '
     ...     'for <wking@tremily.us>; Sun, 09 Oct 2011 11:50:46 -0400 (EDT)')
-    >>> _handle_submission(
-    ...     basedir=course.basedir, course=course.course, original=submission,
-    ...     message=submission, person=student,
-    ...     subject='[submit] Assignment 1')
+    >>> try:
+    ...     _handle_submission(
+    ...         basedir=course.basedir, course=course.course,
+    ...         original=submission, message=submission, person=student,
+    ...         subject='[submit] Assignment 1')
+    ... except _Response:
+    ...     pass
 
     Now lets request the submissions.
 
-    >>> run(basedir=course.basedir, course=course.course, original=message,
+    >>> process(
+    ...     basedir=course.basedir, course=course.course, original=message,
     ...     message=message, person=person,
     ...     subject='[get] {}, {}'.format(student.name, 'Assignment 1'),
-    ...     max_late=0, respond=respond)
+    ...     max_late=0)
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
@@ -386,43 +368,22 @@ def run(basedir, course, original, message, person, subject,
     else:
         authenticated = hasattr(message, 'authenticated') and message.authenticated
     if not authenticated:
-        response_subject = 'must request information in a signed email'
-        if respond:
-            if person.pgp_key:
-                hint = (
-                    'Please resubmit your request in an OpenPGP-signed email\n'
-                    'using your PGP key {}.').format(persion.pgp_key)
-            else:
-                hint = (
-                    "We don't even have a PGP key on file for you.  Please talk\n"
-                    'to your professor or TA about getting one set up.')
-            _respond(
-                course=course, person=person, original=original,
-                subject=response_subject, text=(
-                    'We got an email from you with the following subject:\n'
-                    '  {!r}\n'
-                    'but we cannot provide the information unless we know it\n'
-                    'really was you who asked for it.\n\n'
-                    '{}').format(subject, hint),
-                respond=respond)
-        raise ValueError(response_subject)
+        raise _UnsignedMessage()
     if 'assistants' in person.groups or 'professors' in person.groups:
         email = _get_admin_email(
             basedir=basedir, course=course, original=original,
-            person=person, subject=subject, respond=respond,
-            use_color=None)
+            person=person, subject=subject, use_color=use_color)
     elif 'students' in person.groups:
         email = _get_student_email(
             basedir=basedir, course=course, original=original,
-            person=person, respond=respond, use_color=None)
+            person=person, use_color=use_color)
     else:
         raise NotImplementedError(
             'strange groups {} for {}'.format(person.groups, person))
-    if respond:
-        respond(email)
+    raise _Response(message=email)
 
 def _get_student_email(basedir, course, original, person, student=None,
-                       respond=None, use_color=None):
+                       use_color=None):
     if student is None:
         student = person
         targets = None
@@ -432,19 +393,17 @@ def _get_student_email(basedir, course, original, person, student=None,
         basedir=basedir, author=course.robot, course=course,
         student=student, targets=targets, old=True))
     if len(emails) == 0:
-        if respond:
-            if targets:
-                text = (
-                    "We don't have any grades for {} on file for this course."
-                    ).format(student.name)
-            else:
-                text = (
-                    "We don't have any of your grades on file for this course.")
-            _respond(
-                course=course, person=person, original=original,
-                subject='no grades for {}'.format(student.alias()), text=text,
-                respond=respond)
-        raise ValueError('no grades for {}'.format(student))
+        if targets is None:
+            text = (
+                "We don't have any of your grades on file for this course."
+                )
+        else:
+            text = (
+                "We don't have any grades for {} on file for this course."
+                ).format(student.name)
+        message = _pgp_mime.encodedMIMEText(text)
+        message['Subject'] = 'No grades for {}'.format(student.alias())
+        raise _Response(message=message)
     elif len(emails) > 1:
         raise NotImplementedError(emails)
     email,callback = emails[0]
@@ -452,8 +411,7 @@ def _get_student_email(basedir, course, original, person, student=None,
     return email
 
 def _get_student_submission_email(
-    basedir, course, original, person, assignments, student,
-    respond=None, use_color=None):
+    basedir, course, original, person, assignments, student, use_color=None):
     subject = '{} assignment submissions for {}'.format(
         course.name, student.name)
     text = '{}:\n  * {}\n'.format(
@@ -475,10 +433,11 @@ def _get_student_submission_email(
         else:
             for msg in mbox:
                 message.attach(_MIMEMessage(msg))
-    return _raw_construct_email(
-        author=course.robot, targets=[person], subject=subject, message=message)
+    return _construct_email(
+        author=course.robot, targets=[person], subject=subject,
+        message=message)
 
-def _get_admin_email(basedir, course, original, person, subject, respond=None,
+def _get_admin_email(basedir, course, original, person, subject,
                      use_color=None):
     lsubject = subject.lower()
     students = [p for p in course.find_people()
@@ -487,7 +446,7 @@ def _get_admin_email(basedir, course, original, person, subject, respond=None,
         stream = _io.StringIO()
         _tabulate(course=course, statistics=True, stream=stream)
         text = stream.getvalue()
-        email = _construct_email(
+        email = _construct_text_email(
             author=course.robot, targets=[person],
             subject='All grades for {}'.format(course.name),
             text=text)
@@ -498,26 +457,12 @@ def _get_admin_email(basedir, course, original, person, subject, respond=None,
         if len(assignments) == 0:
             email = _get_student_email(
                 basedir=basedir, course=course, original=original,
-                person=person, student=student, respond=respond,
-                use_color=None)
+                person=person, student=student, use_color=use_color)
         else:
             email = _get_student_submission_email(
                 basedir=basedir, course=course, original=original,
                 person=person, student=student, assignments=assignments,
-                use_color=None)
+                use_color=use_color)
     else:
-        if respond:
-            _respond(
-                course=course, person=person, original=original,
-                subject='subject matches multiple students',
-                text=(
-                    'We got an email from you with the following subject:\n'
-                    '  {!r}\n'
-                    'but it matches several students:\n'
-                    '  * {}').format(
-                    subject, '\n  * '.join(s.name for s in students)),
-                respond=respond)
-        raise ValueError(
-            'subject {!r} matches multiple students {}'.format(
-            subject, students))
+        raise InvalidStudent(students=students)
     return email

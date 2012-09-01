@@ -2,18 +2,41 @@
 
 "Define assorted handlers for use in :py:mod:`~pygrader.mailpipe`."
 
-from ..email import construct_response as _construct_response
+import pgp_mime as _pgp_mime
 
 
-def respond(course, person, original, subject, text, respond):
-    "Helper for composing consistent response messages."
-    response_text = (
-        '{},\n\n'
-        '{}\n\n'
-        'Yours,\n{}').format(
-        person.alias(), text, course.robot.alias())
-    response = _construct_response(
-        author=course.robot, targets=[person],
-        subject=subject, text=response_text,
-        original=original)
-    respond(response)
+class InvalidMessage (ValueError):
+    def __init__(self, message=None, error=None):
+        super(InvalidMessage, self).__init__(error)
+        self.message = message
+        self.error = error
+
+
+class UnsignedMessage (InvalidMessage):
+    def __init__(self, **kwargs):
+        if 'error' not in kwargs:
+            kwargs['error'] = 'unsigned message'
+        super(UnsignedMessage, self).__init__(**kwargs)
+
+
+class InvalidSubjectMessage (InvalidMessage):
+    def __init__(self, subject=None, **kwargs):
+        if 'error' not in kwargs:
+            kwargs['error'] = 'invalid subject {!r}'.format(subject)
+        try:
+            super(InvalidSubjectMessage, self).__init__(**kwargs)
+        except TypeError:
+            raise ValueError(kwargs)
+        self.subject = subject
+
+
+class Response (Exception):
+    """Exception to bubble out email responses.
+
+    Rather than sending email responses themselves, handlers should
+    raise this exception.  The caller can catch it and mail the email
+    (or take other appropriate action).
+    """
+    def __init__(self, message=None):
+        super(Response, self).__init__()
+        self.message = message

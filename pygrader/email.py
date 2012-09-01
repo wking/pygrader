@@ -164,7 +164,7 @@ def get_address(person, header=False):
         return _email_utils.formataddr((name, person.emails[0]))
     return _email_utils.formataddr((person.name, person.emails[0]))
 
-def _construct_email(author, targets, subject, message, cc=None):
+def construct_email(author, targets, subject, message, cc=None):
     if author.pgp_key:
         signers = [author.pgp_key]
     else:
@@ -210,14 +210,14 @@ def _construct_email(author, targets, subject, message, cc=None):
 
     return message
 
-def construct_email(author, targets, subject, text, cc=None):
+def construct_text_email(author, targets, subject, text, cc=None):
     r"""Build a text/plain email using `Person` instances
 
     >>> from pygrader.model.person import Person as Person
     >>> author = Person(name='Джон Доу', emails=['jdoe@a.gov.ru'])
     >>> targets = [Person(name='Jill', emails=['c@d.net'])]
     >>> cc = [Person(name='H.D.', emails=['hd@wall.net'])]
-    >>> msg = construct_email(author, targets, cc=cc,
+    >>> msg = construct_text_email(author, targets, cc=cc,
     ...     subject='Once upon a time', text='Bla bla bla...')
     >>> print(msg.as_string())  # doctest: +REPORT_UDIFF, +ELLIPSIS
     Content-Type: text/plain; charset="us-ascii"
@@ -235,7 +235,7 @@ def construct_email(author, targets, subject, text, cc=None):
 
     With unicode text:
 
-    >>> msg = construct_email(author, targets, cc=cc,
+    >>> msg = construct_text_email(author, targets, cc=cc,
     ...     subject='Once upon a time', text='Funky ✉.')
     >>> print(msg.as_string())  # doctest: +REPORT_UDIFF, +ELLIPSIS
     Content-Type: text/plain; charset="utf-8"
@@ -253,7 +253,7 @@ def construct_email(author, targets, subject, text, cc=None):
     <BLANKLINE>
     """
     message = _pgp_mime.encodedMIMEText(text)
-    return _construct_email(
+    return construct_email(
         author=author, targets=targets, subject=subject, message=message,
         cc=cc)
 
@@ -264,7 +264,7 @@ def construct_response(author, targets, subject, text, original, cc=None):
     >>> student = Person(name='Джон Доу', emails=['jdoe@a.gov.ru'])
     >>> assistant = Person(name='Jill', emails=['c@d.net'])
     >>> cc = [assistant]
-    >>> msg = construct_email(author=student, targets=[assistant],
+    >>> msg = construct_text_email(author=student, targets=[assistant],
     ...     subject='Assignment 1 submission', text='Bla bla bla...')
     >>> rsp = construct_response(author=assistant, targets=[student],
     ...     subject='Received assignment 1 submission', text='3 hours late',
@@ -305,6 +305,6 @@ def construct_response(author, targets, subject, text, original, cc=None):
     message = _MIMEMultipart('mixed')
     message.attach(_pgp_mime.encodedMIMEText(text))
     message.attach(_MIMEMessage(original))
-    return _construct_email(
+    return construct_email(
         author=author, targets=targets, subject=subject, message=message,
         cc=cc)

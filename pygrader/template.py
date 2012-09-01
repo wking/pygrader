@@ -19,7 +19,7 @@ import io as _io
 from jinja2 import Template
 
 from . import LOG as _LOG
-from .email import construct_email as _construct_email
+from .email import construct_text_email as _construct_text_email
 from .email import send_emails as _send_emails
 from .storage import set_notified as _set_notified
 from .tabulate import tabulate as _tabulate
@@ -188,7 +188,7 @@ def construct_assignment_email(author, grade, cc=None):
     Yours,
     Jack
     """
-    return _construct_email(
+    return _construct_text_email(
         author=author, targets=[grade.student], cc=cc,
         subject='Your {} grade'.format(grade.assignment.name),
         text=ASSIGNMENT_TEMPLATE.render(author=author, grade=grade))
@@ -372,7 +372,7 @@ def construct_student_email(author, course, grades, targets=None, cc=None):
     else:
         subject += ' for {}'.format(student.name)
     target = join_with_and([t.alias() for t in targets])
-    return _construct_email(
+    return _construct_text_email(
         author=author, targets=targets, cc=cc, subject=subject,
         text=STUDENT_TEMPLATE.render(
             author=author, target=target, grades=sorted(grades)))
@@ -451,7 +451,7 @@ def construct_course_email(author, course, targets, cc=None):
     target = join_with_and([t.alias() for t in targets])
     table = _io.StringIO()
     _tabulate(course=course, statistics=True, stream=table)
-    return _construct_email(
+    return _construct_text_email(
         author=author, targets=targets, cc=cc,
         subject='Course grades',
         text=COURSE_TEMPLATE.render(
