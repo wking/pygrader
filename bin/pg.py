@@ -140,7 +140,7 @@ if __name__ == '__main__':
               'actually marked as late'))
     mailpipe_parser.add_argument(
         '-r', '--respond', default=False, action='store_const', const=True,
-        help=('Send automatic response emails to acknowledge incomming '
+        help=('Send automatic response emails to acknowledge incoming '
               'messages.'))
 
     todo_parser = subparsers.add_parser(
