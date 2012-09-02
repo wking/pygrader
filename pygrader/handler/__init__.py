@@ -25,7 +25,14 @@ class InvalidMessage (ValueError):
         return None
 
 
-class UnsignedMessage (InvalidMessage):
+class InsecureMessage (InvalidMessage):
+    def __init__(self, **kwargs):
+        if 'error' not in kwargs:
+            kwargs['error'] = 'insecure message'
+        super(InsecureMessage, self).__init__(**kwargs)
+
+
+class UnsignedMessage (InsecureMessage):
     def __init__(self, **kwargs):
         if 'error' not in kwargs:
             kwargs['error'] = 'unsigned message'
