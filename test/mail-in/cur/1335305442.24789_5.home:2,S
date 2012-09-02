@@ -1,0 +1,17 @@
+Return-Path: <bb@shire.org>
+Received: from smtp.mail.uu.edu (localhost.localdomain [127.0.0.1])
+  by smtp.mail.uu.edu (Postfix) with SMTP id 68CB45C8453
+  for <wking@tremily.us>; Thu, 19 Jan 2012 20:53:46 -0500 (EST)
+Received: from smtp.home.net (smtp.home.net [123.456.123.456])
+  by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF
+  for <wking@tremily.us>; Thu, 19 Jan 2012 20:51:46 -0500 (EST)
+Date: Thu, 19 Jan 2012 20:51:46 -0500
+From: "Billy B." <bb@shire.org>
+To: Physics 101 <phys101@tower.edu>
+Subject: [submit] Assignment 1
+Message-ID: <20120120015146.GB3601@home.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+The answer is 42.
