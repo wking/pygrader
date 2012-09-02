@@ -80,8 +80,7 @@ class SubjectlessMessage (_InvalidSubjectMessage):
 class InvalidHandlerMessage (_InvalidSubjectMessage):
     def __init__(self, target=None, handlers=None, **kwargs):
         if 'error' not in kwargs:
-            kwargs['error'] = 'no handler for {!r}'.format(
-                kwargs.get('target', None))
+            kwargs['error'] = 'no handler for {!r}'.format(target)
         super(InvalidHandlerMessage, self).__init__(**kwargs)
         self.target = target
         self.handlers = handlers
@@ -755,10 +754,9 @@ def _get_message_target(subject):
 def _get_handler(handlers, target):
     try:
         handler = handlers[target]
-    except KeyError:
-        response_subject = 'no handler for {}'.format(target)
-        _LOG.warning(_color_string(string=response_subject))
-        raise InvalidHandlerMessage(target=target, handlers=handlers)
+    except KeyError as error:
+        raise InvalidHandlerMessage(
+            target=target, handlers=handlers) from error
     return handler
 
 def _get_verified_message(message, pgp_key):
