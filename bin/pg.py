@@ -210,6 +210,9 @@ if __name__ == '__main__':
             if hasattr(args, attr):
                 kwargs[attr] = getattr(args, attr)
 
+    if args.func == _mailpipe:
+        kwargs['continue_after_invalid_message'] = True
+
     if 'use_color' in func_args:
         kwargs['use_color'] = args.color
 
