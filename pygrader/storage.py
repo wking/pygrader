@@ -341,6 +341,21 @@ def set_late(basedir, assignment, person):
     Lpath = _os_path.join(path, 'late')
     _touch(Lpath)
 
+def save_grade(basedir, grade):
+    "Save a grade into a course directory"
+    path = assignment_path(
+        basedir=basedir, assignment=grade.assignment, person=grade.student)
+    if not _os_path.isdir(path):
+        _os.makedirs(path)
+    gpath = _os_path.join(path, 'grade')
+    with _io.open(gpath, 'w', encoding=_ENCODING) as f:
+        f.write('{}\n'.format(grade.points))
+        if grade.comment:
+            f.write('\n{}\n'.format(grade.comment.strip()))
+    set_notified(basedir=basedir, grade=grade)
+    set_late(
+        basedir=basedir, assignment=grade.assignment, person=grade.student)
+
 def _touch(path):
     """Touch a file (`path` is created if it doesn't already exist)
 
