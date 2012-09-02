@@ -911,7 +911,7 @@ def _get_error_response(error):
             '  {!r}\n'
             'which does not match any submittable handler name for\n'
             '{}.\n'
-            '{}').format(repr(error.subject), error.course.name, hint)
+            '{}').format(error.subject, error.course.name, hint)
     elif isinstance(error, SubjectlessMessage):
         subject = 'no subject in {}'.format(error.message['Message-ID'])
         text = 'We received an email message from you without a subject.'
