@@ -373,7 +373,7 @@ def run(basedir, course, message, person, subject,
     else:
         raise NotImplementedError(
             'strange groups {} for {}'.format(person.groups, person))
-    raise _Response(message=email)
+    raise _Response(message=email, complete=True)
 
 def _get_student_email(basedir, course, person, student=None):
     if student is None:
@@ -399,7 +399,7 @@ def _get_student_email(basedir, course, person, student=None):
                 ).format(student.name)
         message = _pgp_mime.encodedMIMEText(text)
         message['Subject'] = 'No grades for {}'.format(student.alias())
-        raise _Response(message=message)
+        raise _Response(message=message, complete=True)
     elif len(emails) > 1:
         raise NotImplementedError(emails)
     email,callback = emails[0]
