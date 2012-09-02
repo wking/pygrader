@@ -57,6 +57,7 @@ class Response (Exception):
     raise this exception.  The caller can catch it and mail the email
     (or take other appropriate action).
     """
-    def __init__(self, message=None):
+    def __init__(self, message=None, complete=False):
         super(Response, self).__init__()
         self.message = message
+        self.complete = complete

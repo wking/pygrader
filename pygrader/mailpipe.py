@@ -605,33 +605,34 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
                 respond(response)
         except _Response as response:
             if respond:
-                author = course.robot
-                target = person
                 msg = response.message
-                if isinstance(response.message, _MIMEText):
-                    # Manipulate body (based on pgp_mime.append_text)
-                    original_encoding = msg.get_charset().input_charset
-                    original_payload = str(
-                        msg.get_payload(decode=True), original_encoding)
-                    new_payload = (
-                        '{},\n\n'
-                        '{}\n\n'
-                        'Yours,\n'
-                        '{}\n').format(
-                        target.alias(), original_payload, author.alias())
-                    new_encoding = _pgp_mime.guess_encoding(new_payload)
-                    if msg.get('content-transfer-encoding', None):
-                        # clear CTE so set_payload will set it properly
-                        del msg['content-transfer-encoding']
-                    msg.set_payload(new_payload, new_encoding)
-                subject = msg['Subject']
-                assert subject is not None, msg
-                del msg['Subject']
-                msg = _construct_email(
-                    author=author, targets=[person], subject=subject,
-                    message=msg)
+                if not response.complete:
+                    author = course.robot
+                    target = person
+                    msg = response.message
+                    if isinstance(response.message, _MIMEText):
+                        # Manipulate body (based on pgp_mime.append_text)
+                        original_encoding = msg.get_charset().input_charset
+                        original_payload = str(
+                            msg.get_payload(decode=True), original_encoding)
+                        new_payload = (
+                            '{},\n\n'
+                            '{}\n\n'
+                            'Yours,\n'
+                            '{}\n').format(
+                            target.alias(), original_payload, author.alias())
+                        new_encoding = _pgp_mime.guess_encoding(new_payload)
+                        if msg.get('content-transfer-encoding', None):
+                            # clear CTE so set_payload will set it properly
+                            del msg['content-transfer-encoding']
+                        msg.set_payload(new_payload, new_encoding)
+                    subject = msg['Subject']
+                    assert subject is not None, msg
+                    del msg['Subject']
+                    msg = _construct_email(
+                        author=author, targets=[person], subject=subject,
+                        message=msg)
                 respond(msg)
-
 
 def _load_messages(course, stream, mailbox=None, input_=None, output=None,
                    continue_after_invalid_message=False,
