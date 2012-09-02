@@ -43,10 +43,7 @@ class InvalidSubjectMessage (InvalidMessage):
     def __init__(self, subject=None, **kwargs):
         if 'error' not in kwargs:
             kwargs['error'] = 'invalid subject {!r}'.format(subject)
-        try:
-            super(InvalidSubjectMessage, self).__init__(**kwargs)
-        except TypeError:
-            raise ValueError(kwargs)
+        super(InvalidSubjectMessage, self).__init__(**kwargs)
         self.subject = subject
 
 
