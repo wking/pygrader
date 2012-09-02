@@ -19,7 +19,7 @@ import logging as _logging
 from .color import ColoredFormatter as _ColoredFormatter
 
 
-__version__ = '0.2'
+__version__ = '0.3'
 ENCODING = 'utf-8'
 
 
