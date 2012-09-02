@@ -590,12 +590,12 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
         except _InvalidMessage as error:
             error.course = course
             error.message = original
-            if person is not None and not hasattr(error, 'person'):
-                error.person = person
-            if subject is not None and not hasattr(error, 'subject'):
-                error.subject = subject
-            if target is not None and not hasattr(error, 'target'):
-                error.target = target
+            for attribute,value in [('person', person),
+                                    ('subject', subject),
+                                    ('target', target)]:
+                if (value is not None and
+                    getattr(error, attribute, None) is None):
+                    setattr(error, attribute, value)
             _LOG.warn('invalid message {}'.format(error.message_id()))
             if not continue_after_invalid_message:
                 raise
@@ -710,12 +710,12 @@ def _parse_message(course, message, trust_email_infrastructure=False):
     except _InvalidMessage as error:
         error.course = course
         error.message = original
-        if person is not None and not hasattr(error, 'person'):
-            error.person = person
-        if subject is not None and not hasattr(error, 'subject'):
-            error.subject = subject
-        if target is not None and not hasattr(error, 'target'):
-            error.target = target
+        for attribute,value in [('person', person),
+                                ('subject', subject),
+                                ('target', target)]:
+            if (value is not None and
+                getattr(error, attribute, None) is None):
+                setattr(error, attribute, value)
         raise
     return (original, message, person, subject, target)
 
