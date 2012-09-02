@@ -11,6 +11,19 @@ class InvalidMessage (ValueError):
         self.message = message
         self.error = error
 
+    def message_id(self):
+        """Return a short string identifying the invalid message.
+        """
+        if self.message is None:
+            return None
+        subject = self.message['Subject']
+        if subject is not None:
+            return repr(subject)
+        message_id = self.message['Message-ID']
+        if message_id is not None:
+            return message_id
+        return None
+
 
 class UnsignedMessage (InvalidMessage):
     def __init__(self, **kwargs):
