@@ -379,8 +379,12 @@ def _get_student_email(basedir, course, person, student=None):
     if student is None:
         student = person
         targets = None
+        _LOG.debug('construct student grade email about {} for {}'.format(
+                student, student))
     else:
         targets = [person]
+        _LOG.debug('construct student grade email about {} for {}'.format(
+                student, person))
     emails = list(_student_email(
         basedir=basedir, author=course.robot, course=course,
         student=student, targets=targets, old=True))
@@ -404,6 +408,8 @@ def _get_student_email(basedir, course, person, student=None):
 
 def _get_student_submission_email(
     basedir, course, person, assignments, student):
+    _LOG.debug('construct student submission email about {} {} for {}'.format(
+            student, assignments, person))
     subject = '{} assignment submissions for {}'.format(
         course.name, student.name)
     text = '{}:\n  * {}\n'.format(
@@ -434,6 +440,7 @@ def _get_admin_email(basedir, course, person, subject):
     students = [p for p in course.find_people()
                 if p.name.lower() in lsubject]
     if len(students) == 0:
+        _LOG.debug('construct course grades email for {}'.format(person))
         stream = _io.StringIO()
         _tabulate(
             course=course, statistics=True, stream=stream, use_color=False)
