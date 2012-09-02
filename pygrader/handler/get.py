@@ -16,6 +16,7 @@ import pgp_mime as _pgp_mime
 from .. import LOG as _LOG
 from ..email import construct_text_email as _construct_text_email
 from ..email import construct_email as _construct_email
+from ..extract_mime import message_time as _message_time
 from ..storage import assignment_path as _assignment_path
 from ..tabulate import tabulate as _tabulate
 from ..template import _student_email as _student_email
@@ -430,11 +431,15 @@ def _get_student_submission_email(
         except _mailbox.NoSuchMailboxError as e:
             pass
         else:
+            messages = []
             for key,msg in mbox.items():
                 subpath = mbox._lookup(key)
                 if subpath.endswith('.gitignore'):
                     _LOG.debug('skipping non-message {}'.format(subpath))
                     continue
+                messages.append(msg)
+            messages.sort(key=_message_time)
+            for msg in messages:
                 message.attach(_MIMEMessage(msg))
     return _construct_email(
         author=course.robot, targets=[person], subject=subject,
