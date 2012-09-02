@@ -573,6 +573,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
             _LOG.warn('invalid message {}'.format(error.message_id()))
             if not continue_after_invalid_message:
                 raise
+            _LOG.warn('{}'.format(error))
             if respond:
                 response = _get_error_response(error)
                 respond(response)
@@ -641,6 +642,7 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
             _LOG.warn('invalid message {}'.format(error.message_id()))
             if not continue_after_invalid_message:
                 raise
+            _LOG.warn('{}'.format(error))
             if respond:
                 response = _get_error_response(error)
                 if response is not None:
