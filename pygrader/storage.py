@@ -281,26 +281,32 @@ def load_person(name, data={}):
     return _Person(name=name, **kwargs)
 
 def load_grades(basedir, assignments, people):
+    "Load all grades in a course directory."
     for assignment in assignments:
         for person in people:
-            _LOG.debug('loading {} grade for {}'.format(assignment, person))
-            path = assignment_path(basedir, assignment, person)
-            gpath = _os_path.join(path, 'grade')
             try:
-                g = _load_grade(_io.open(gpath, 'r', encoding=_ENCODING),
-                                assignment, person)
+                yield load_grade(basedir, assignment, person)
             except IOError:
                 continue
-            #g.late = _os.stat(gpath).st_mtime > assignment.due
-            g.late = _os_path.exists(_os_path.join(path, 'late'))
-            npath = _os_path.join(path, 'notified')
-            if _os_path.exists(npath):
-                g.notified = newer(npath, gpath)
-            else:
-                g.notified = False
-            yield g
 
-def _load_grade(stream, assignment, person):
+def load_grade(basedir, assignment, person):
+    "Load a single grade from a course directory."
+    _LOG.debug('loading {} grade for {}'.format(assignment, person))
+    path = assignment_path(basedir, assignment, person)
+    gpath = _os_path.join(path, 'grade')
+    g = parse_grade(_io.open(gpath, 'r', encoding=_ENCODING),
+                        assignment, person)
+    #g.late = _os.stat(gpath).st_mtime > assignment.due
+    g.late = _os_path.exists(_os_path.join(path, 'late'))
+    npath = _os_path.join(path, 'notified')
+    if _os_path.exists(npath):
+        g.notified = newer(npath, gpath)
+    else:
+        g.notified = False
+    return g
+
+def parse_grade(stream, assignment, person):
+    "Parse the points and comment from a grade stream."
     try:
         points = float(stream.readline())
     except ValueError:
