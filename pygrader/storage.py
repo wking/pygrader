@@ -54,6 +54,7 @@ def load_course(basedir):
     []
     >>> print(course.robot)
     <Person Robot101>
+    >>> stub_course.cleanup()
     """
     _LOG.debug('loading course from {}'.format(basedir))
     config = _configparser.ConfigParser()
