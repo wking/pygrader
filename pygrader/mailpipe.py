@@ -562,17 +562,18 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
                 person=person, subject=subject,
                 max_late=max_late, dry_run=dry_run)
         except _InvalidMessage as error:
+            error.course = course
+            error.message = original
+            if person is not None and not hasattr(error, 'person'):
+                error.person = person
+            if subject is not None and not hasattr(error, 'subject'):
+                error.subject = subject
+            if target is not None and not hasattr(error, 'target'):
+                error.target = target
+            _LOG.warn('invalid message {}'.format(error.message_id()))
             if not continue_after_invalid_message:
                 raise
             if respond:
-                error.course = course
-                error.message = original
-                if person is not None and not hasattr(error, 'person'):
-                    error.person = person
-                if subject is not None and not hasattr(error, 'subject'):
-                    error.subject = subject
-                if target is not None and not hasattr(error, 'target'):
-                    error.target = target
                 response = _get_error_response(error)
                 respond(response)
         except _Response as response:
@@ -629,6 +630,8 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
         try:
             ret = _parse_message(course=course, message=msg)
         except _InvalidMessage as error:
+            error.message = msg
+            _LOG.warn('invalid message {}'.format(error.message_id()))
             if not continue_after_invalid_message:
                 raise
             if respond:
