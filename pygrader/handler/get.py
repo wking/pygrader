@@ -419,9 +419,10 @@ def _get_student_submission_email(
     for assignment in assignments:
         grade = course.grade(student=student, assignment=assignment)
         if grade is not None:
-            message.attach(_pgp_mime.encodedMIMEText(
-                    '{} grade: {}\n\n{}\n'.format(
-                        assignment.name, grade.points, grade.comment)))
+            text = '{} grade: {}\n'.format(assignment.name, grade.points)
+            if grade.comment:
+                text += '\n{}\n'.format(grade.comment)
+            message.attach(_pgp_mime.encodedMIMEText(text))
         assignment_path = _assignment_path(basedir, assignment, student)
         mpath = _os_path.join(assignment_path, 'mail')
         try:
