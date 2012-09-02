@@ -226,7 +226,6 @@ if __name__ == '__main__':
     if hasattr(args, 'respond') and getattr(args, 'respond'):
         kwargs['respond'] = _Responder(
             smtp=kwargs.get('smtp', None),
-            use_color=kwargs.get('use_color', False),
             dry_run=kwargs.get('dry_run', False))
 
     _LOG.debug('execute {} with {}'.format(args.func, kwargs))
