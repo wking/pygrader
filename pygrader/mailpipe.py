@@ -662,7 +662,7 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
             ombox = _mailbox.Maildir(output, factory=None, create=True)
     else:
         raise ValueError(mailbox)
-    messages = sorted(messages, key=_get_message_time)
+    messages.sort(key=_get_message_time)
     for key,msg in messages:
         try:
             ret = _parse_message(
