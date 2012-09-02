@@ -625,12 +625,12 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
                         del msg['content-transfer-encoding']
                     msg.set_payload(new_payload, new_encoding)
                 subject = msg['Subject']
-                del msg['Subject']
                 assert subject is not None, msg
+                del msg['Subject']
                 msg = _construct_email(
                     author=author, targets=[person], subject=subject,
                     message=msg)
-                respond(response.message)
+                respond(msg)
 
 
 def _load_messages(course, stream, mailbox=None, input_=None, output=None,
