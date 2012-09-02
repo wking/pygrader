@@ -47,6 +47,28 @@ class InvalidSubjectMessage (InvalidMessage):
         self.subject = subject
 
 
+class InvalidStudentSubject (InvalidSubjectMessage):
+    def __init__(self, students=None, **kwargs):
+        if 'error' not in kwargs:
+            if students:
+                kwargs['error'] = 'Subject matches multiple students'
+            else:
+                kwargs['error'] = "Subject doesn't match any student"
+        super(InvalidStudentSubject, self).__init__(**kwargs)
+        self.students = students
+
+
+class InvalidAssignmentSubject (InvalidSubjectMessage):
+    def __init__(self, assignments=None, **kwargs):
+        if 'error' not in kwargs:
+            if assignments:
+                kwargs['error'] = 'Subject matches multiple assignments'
+            else:
+                kwargs['error'] = "Subject doesn't match any assignment"
+        super(InvalidAssignmentSubject, self).__init__(kwargs)
+        self.assignments = assignments
+
+
 class Response (Exception):
     """Exception to bubble out email responses.
 
@@ -58,3 +80,20 @@ class Response (Exception):
         super(Response, self).__init__()
         self.message = message
         self.complete = complete
+
+
+def get_subject_student(course, subject):
+    lsubject = subject.lower()
+    students = [p for p in course.find_people()
+                if p.name.lower() in lsubject]
+    if len(students) == 1:
+        return students[0]
+    raise InvalidStudentSubject(students=students, subject=subject)
+
+def get_subject_assignment(course, subject):
+    lsubject = subject.lower()
+    assignments = [a for a in course.assignments
+                   if a.name.lower() in lsubject]
+    if len(assignments) == 1:
+        return assignments[0]
+    raise InvalidAssignmentSubject(assignments=assignments, subject=subject)

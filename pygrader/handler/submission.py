@@ -19,16 +19,16 @@ from ..extract_mime import extract_mime as _extract_mime
 from ..extract_mime import message_time as _message_time
 from ..storage import assignment_path as _assignment_path
 from ..storage import set_late as _set_late
+from . import get_subject_assignment as _get_subject_assignment
 from . import InvalidMessage as _InvalidMessage
 from . import Response as _Response
 
 
-class InvalidAssignment (_InvalidMessage):
-    def __init__(self, assignment, **kwargs):
+class InvalidSubmission (_InvalidMessage):
+    def __init__(self, assignment=None, **kwargs):
         if 'error' not in kwargs:
-            kwargs['error'] = 'Received invalid {} submission'.format(
-                assignment.name)
-        super(InvalidAssignment, self).__init__(**kwargs)
+            kwargs['error'] = 'invalid submission'
+        super(InvalidSubmission, self).__init__(**kwargs)
         self.assignment = assignment
 
 
@@ -87,51 +87,11 @@ def run(basedir, course, message, person, subject, max_late=0, dry_run=None,
     message['Subject'] = 'Received {} submission'.format(assignment.name)
     raise _Response(message=message)
 
-def _match_assignment(assignment, subject):
-    return assignment.name.lower() in subject.lower()
-
 def _get_assignment(course, subject):
-    assignments = [a for a in course.assignments
-                   if _match_assignment(a, subject)]
-    if len(assignments) != 1:
-        if len(assignments) == 0:
-            response_subject = 'no assignment found in {!r}'.format(subject)
-            error = (
-                'does not match any submittable assignment name\n'
-                'for {}.\n').format(course.name)
-        else:
-            response_subject = 'several assignments found in {!r}'.format(
-                subject)
-            error = (
-                'matches several submittable assignment names\n'
-                'for {}:  * {}\n').format(
-                course.name,
-                '\n  * '.join(a.name for a in assignments))
-        submittable_assignments = [
-            a for a in course.assignments if a.submittable]
-        if not submittable_assignments:
-            hint = (
-                'In fact, there are no submittable assignments for\n'
-                'this course!')
-        else:
-            hint = (
-                'Remember to use the full name for the assignment in the\n'
-                'subject.  For example:\n'
-                '  {} submission').format(
-                submittable_assignments[0].name)
-        message = _pgp_mime.encodedMIMEText((
-                'We got an email from you with the following subject:\n'
-                '  {!r}\n'
-                'which {}.\n\n'
-                '{}\n').format(subject, course.name, hint))
-        message['Subject'] = response_subject
-        raise _Response(
-            message=message, exception=ValueError(response_subject))
-    assignment = assignments[0]
-
+    assignment = _get_subject_assignment(course, subject)
     if not assignment.submittable:
-        raise InvalidAssignment(assignment)
-    return assignments[0]
+        raise InvalidSubmission(assignment=assignment)
+    return assignment
 
 def _save_local_message_copy(msg, person, assignment_path, dry_run=False):
     try:

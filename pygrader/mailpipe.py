@@ -34,15 +34,16 @@ from .email import construct_response as _construct_response
 from .extract_mime import message_time as _message_time
 from .model.person import Person as _Person
 
+from .handler import InsecureMessage as _InsecureMessage
+from .handler import InvalidAssignmentSubject as _InvalidAssignmentSubject
 from .handler import InvalidMessage as _InvalidMessage
+from .handler import InvalidStudentSubject as _InvalidStudentSubject
 from .handler import InvalidSubjectMessage as _InvalidSubjectMessage
 from .handler import Response as _Response
 from .handler import UnsignedMessage as _UnsignedMessage
-from .handler import InsecureMessage as _InsecureMessage
-from .handler.get import InvalidStudent as _InvalidStudent
 from .handler.get import run as _handle_get
-from .handler.submission import InvalidAssignment as _InvalidAssignment
 from .handler.submission import run as _handle_submission
+from .handler.submission import InvalidSubmission as _InvalidSubmission
 
 
 _TAG_REGEXP = _re.compile('^.*\[([^]]*)\].*$')
@@ -240,6 +241,16 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> message['Return-Path'] = '<bb@greyhavens.net>'
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
+    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    MIME-Version: 1.0
+    Content-Disposition: inline
+    Date: ...
+    From: Robot101 <phys101@tower.edu>
+    Reply-to: Robot101 <phys101@tower.edu>
+    To: Bilbo Baggins <bb@shire.org>
+    Subject: Received Assignment 1 submission
+    <BLANKLINE>
+    --===============...==
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Disposition: inline
@@ -252,6 +263,19 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Yours,
     phys-101 robot
     <BLANKLINE>
+    --===============...==
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Description: OpenPGP digital signature
+    Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
+    <BLANKLINE>
+    -----BEGIN PGP SIGNATURE-----
+    Version: GnuPG v2.0.19 (GNU/Linux)
+    <BLANKLINE>
+    ...
+    -----END PGP SIGNATURE-----
+    <BLANKLINE>
+    --===============...==--
 
     >>> course.print_tree()  # doctest: +REPORT_UDIFF, +ELLIPSIS
     Bilbo_Baggins
@@ -283,6 +307,16 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     ...     'for <wking@tremily.us>; Mon, 09 Oct 2011 11:50:46 -0400 (EDT)')
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
+    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    MIME-Version: 1.0
+    Content-Disposition: inline
+    Date: ...
+    From: Robot101 <phys101@tower.edu>
+    Reply-to: Robot101 <phys101@tower.edu>
+    To: Bilbo Baggins <bb@shire.org>
+    Subject: Received Assignment 1 submission
+    <BLANKLINE>
+    --===============...==
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Disposition: inline
@@ -295,6 +329,20 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Yours,
     phys-101 robot
     <BLANKLINE>
+    --===============...==
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Description: OpenPGP digital signature
+    Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
+    <BLANKLINE>
+    -----BEGIN PGP SIGNATURE-----
+    Version: GnuPG v2.0.19 (GNU/Linux)
+    <BLANKLINE>
+    ...
+    -----END PGP SIGNATURE-----
+    <BLANKLINE>
+    --===============...==--
+
     >>> course.print_tree()  # doctest: +REPORT_UDIFF, +ELLIPSIS
     Bilbo_Baggins
     Bilbo_Baggins/Assignment_1
@@ -326,6 +374,16 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> message['Message-ID'] = '<hgi.jlk@home.net>'
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
+    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    MIME-Version: 1.0
+    Content-Disposition: inline
+    Date: ...
+    From: Robot101 <phys101@tower.edu>
+    Reply-to: Robot101 <phys101@tower.edu>
+    To: Bilbo Baggins <bb@shire.org>
+    Subject: Received Assignment 1 submission
+    <BLANKLINE>
+    --===============...==
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Disposition: inline
@@ -338,6 +396,19 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     Yours,
     phys-101 robot
     <BLANKLINE>
+    --===============...==
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: 7bit
+    Content-Description: OpenPGP digital signature
+    Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
+    <BLANKLINE>
+    -----BEGIN PGP SIGNATURE-----
+    Version: GnuPG v2.0.19 (GNU/Linux)
+    <BLANKLINE>
+    ...
+    -----END PGP SIGNATURE-----
+    <BLANKLINE>
+    --===============...==--
 
     Response to a submission on an unsubmittable assignment:
 
@@ -896,7 +967,14 @@ def _get_error_response(error):
     author = error.course.robot
     target = getattr(error, 'person', None)
     subject = str(error)
-    if isinstance(error, InvalidHandlerMessage):
+    if isinstance(error, _InvalidSubmission):
+        subject = 'Received invalid {} submission'.format(
+            error.assignment.name)
+        text = (
+            'We received your submission for {}, but you are not\n'
+            'allowed to submit that assignment via email.'
+            ).format(error.assignment.name)
+    elif isinstance(error, InvalidHandlerMessage):
         targets = sorted(error.handlers.keys())
         if not targets:
             hint = (
@@ -927,6 +1005,31 @@ def _get_error_response(error):
             'or TA.').format(error.course.name)
     elif isinstance(error, NoReturnPath):
         return
+    elif isinstance(error, _InvalidAssignmentSubject):
+        if error.assignments:
+            hint = (
+                'but it matches several assignments:\n'
+                '  * {}').format('\n  * '.join(
+                    a.name for a in error.assignments))
+        else:
+            # prefer a submittable example assignment
+            assignments = [
+                a for a in error.course.assignments if a.submittable]
+            assignments += course.assignments  # but fall back to any one
+            hint = (
+                'Remember to use the full name for the assignment in the\n'
+                'subject.  For example:\n'
+                '  {} submission').format(assignments[0].name)
+        text = (
+            'We got an email from you with the following subject:\n'
+            '  {!r}\n{}').format(error.subject, hint)
+    elif isinstance(error, _InvalidStudentSubject):
+        text = (
+            'We got an email from you with the following subject:\n'
+            '  {!r}\n'
+            'but it matches several students:\n'
+            '  * {}').format(
+            error.subject, '\n  * '.join(s.name for s in error.students))
     elif isinstance(error, _InvalidSubjectMessage):
         text = (
             'We received an email message from you with an invalid\n'
@@ -936,18 +1039,6 @@ def _get_error_response(error):
         text = (
             'We received an email message from you without a valid\n'
             'PGP signature.')
-    elif isinstance(error, _InvalidAssignment):
-        text = (
-            'We received your submission for {}, but you are not\n'
-            'allowed to submit that assignment via email.'
-            ).format(error.assignment.name)
-    elif isinstance(error, _InvalidStudent):
-        text = (
-            'We got an email from you with the following subject:\n'
-            '  {!r}\n'
-            'but it matches several students:\n'
-            '  * {}').format(
-            error.subject, '\n  * '.join(s.name for s in error.students))
     elif isinstance(error, _InvalidMessage):
         text = subject
     else:

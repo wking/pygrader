@@ -20,18 +20,12 @@ from ..extract_mime import message_time as _message_time
 from ..storage import assignment_path as _assignment_path
 from ..tabulate import tabulate as _tabulate
 from ..template import _student_email as _student_email
-from . import InvalidMessage as _InvalidMessage
-from . import InvalidSubjectMessage as _InvalidSubjectMessage
+from . import get_subject_assignment as _get_subject_assignment
+from . import get_subject_student as _get_subject_student
+from . import InvalidStudentSubject as _InvalidStudentSubject
+from . import InvalidAssignmentSubject as _InvalidAssignmentSubject
 from . import Response as _Response
 from . import UnsignedMessage as _UnsignedMessage
-
-
-class InvalidStudent (_InvalidSubjectMessage):
-    def __init__(self, students=None, **kwargs):
-        if 'error' not in kwargs:
-            kwargs['error'] = 'Subject matches multiple students'
-        super(InvalidStudent, self).__init__(kwargs)
-        self.students = students
 
 
 def run(basedir, course, message, person, subject,
@@ -446,10 +440,12 @@ def _get_student_submission_email(
         message=message)
 
 def _get_admin_email(basedir, course, person, subject):
-    lsubject = subject.lower()
-    students = [p for p in course.find_people()
-                if p.name.lower() in lsubject]
-    if len(students) == 0:
+    try:
+        student = _get_subject_student(course, subject)
+    except _InvalidStudentSubject as error:
+        if error.students:  # several students
+            raise
+        # no students
         _LOG.debug('construct course grades email for {}'.format(person))
         stream = _io.StringIO()
         _tabulate(
@@ -459,17 +455,20 @@ def _get_admin_email(basedir, course, person, subject):
             author=course.robot, targets=[person],
             subject='All grades for {}'.format(course.name),
             text=text)
-    elif len(students) == 1:
-        student = students[0]
-        assignments = [a for a in course.assignments
-                       if a.name.lower() in lsubject]
-        if len(assignments) == 0:
-            email = _get_student_email(
-                basedir=basedir, course=course, person=person, student=student)
-        else:
+    else:  # a single student
+        try:
+            assignment = _get_subject_assignment(course, subject)
+        except _InvalidAssignmentSubject as error:
+            if error.assignments:  # several assignments
+                email = _get_student_submission_email(
+                    basedir=basedir, course=course, person=person,
+                    student=student, assignments=error.assignments)
+            else: # no assignments
+                email = _get_student_email(
+                    basedir=basedir, course=course, person=person,
+                    student=student)
+        else:  # a single assignment
             email = _get_student_submission_email(
                 basedir=basedir, course=course, person=person, student=student,
-                assignments=assignments)
-    else:
-        raise InvalidStudent(students=students)
+                assignments=[assignment])
     return email
