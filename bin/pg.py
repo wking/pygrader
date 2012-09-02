@@ -142,6 +142,11 @@ if __name__ == '__main__':
         '-r', '--respond', default=False, action='store_const', const=True,
         help=('Send automatic response emails to acknowledge incoming '
               'messages.'))
+    mailpipe_parser.add_argument(
+        '-t', '--trust-email-infrastructure',
+        default=False, action='store_const', const=True,
+        help=('Send automatic response emails even if the target has not '
+              'registered a PGP key.'))
 
     todo_parser = subparsers.add_parser(
         'todo', help=_todo.__doc__.splitlines()[0])
@@ -198,7 +203,7 @@ if __name__ == '__main__':
                     else:
                         kwargs[attr].extend(course.find_people(name=person))
         for attr in ['dry_run', 'mailbox', 'output', 'input_', 'max_late',
-                     'old', 'statistics']:
+                     'old', 'statistics', 'trust_email_infrastructure']:
             if hasattr(args, attr):
                 kwargs[attr] = getattr(args, attr)
     elif args.func == _test_smtp:

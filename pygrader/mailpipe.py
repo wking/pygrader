@@ -89,6 +89,7 @@ class InvalidHandlerMessage (_InvalidSubjectMessage):
 
 def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
              output=None, continue_after_invalid_message=False, max_late=0,
+             trust_email_infrastructure=False,
              handlers={
         'get': _handle_get,
         'submit': _handle_submission,
@@ -561,7 +562,9 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
             handler(
                 basedir=basedir, course=course, message=message,
                 person=person, subject=subject,
-                max_late=max_late, dry_run=dry_run)
+                max_late=max_late,
+                trust_email_infrastructure=trust_email_infrastructure,
+                dry_run=dry_run)
         except _InvalidMessage as error:
             error.course = course
             error.message = original
