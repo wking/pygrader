@@ -610,6 +610,7 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
                    continue_after_invalid_message=False, respond=None,
                    dry_run=False):
     if mailbox is None:
+        _LOG.debug('loading message from {}'.format(stream))
         mbox = None
         messages = [(None,_message_from_file(stream))]
         if output is not None:
