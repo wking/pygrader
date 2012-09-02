@@ -31,6 +31,7 @@ from lxml import etree as _etree
 from . import LOG as _LOG
 from .email import construct_email as _construct_email
 from .email import construct_response as _construct_response
+from .extract_mime import message_time as _message_time
 from .model.person import Person as _Person
 
 from .handler import InvalidMessage as _InvalidMessage
@@ -634,6 +635,7 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
             ombox = _mailbox.Maildir(output, factory=None, create=True)
     else:
         raise ValueError(mailbox)
+    messages = sorted(messages, key=_get_message_time)
     for key,msg in messages:
         try:
             ret = _parse_message(course=course, message=msg)
@@ -928,3 +930,8 @@ def _get_error_response(error):
             'Yours,\n'
             '{}\n'.format(target.alias(), text, author.alias())),
         original=error.message)
+
+def _get_message_time(key_message):
+    "Key function for sorting mailbox (key,message) tuples."
+    key,message = key_message
+    return _message_time(message)
