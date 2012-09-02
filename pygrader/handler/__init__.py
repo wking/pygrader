@@ -25,6 +25,15 @@ class InvalidMessage (ValueError):
         return None
 
 
+class PermissionViolationMessage (InvalidMessage):
+    def __init__(self, person=None, allowed_groups=None, **kwargs):
+        if 'error' not in kwargs:
+            kwargs['error'] = 'action not permitted'
+        super(PermissionViolationMessage, self).__init__(**kwargs)
+        self.person = person
+        self.allowed_groups = allowed_groups
+
+
 class InsecureMessage (InvalidMessage):
     def __init__(self, **kwargs):
         if 'error' not in kwargs:

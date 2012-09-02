@@ -39,9 +39,12 @@ from .handler import InvalidAssignmentSubject as _InvalidAssignmentSubject
 from .handler import InvalidMessage as _InvalidMessage
 from .handler import InvalidStudentSubject as _InvalidStudentSubject
 from .handler import InvalidSubjectMessage as _InvalidSubjectMessage
+from .handler import PermissionViolationMessage as _PermissionViolationMessage
 from .handler import Response as _Response
 from .handler import UnsignedMessage as _UnsignedMessage
 from .handler.get import run as _handle_get
+from .handler.grade import run as _handle_grade
+from .handler.grade import MissingGradeMessage as _MissingGradeMessage
 from .handler.submission import run as _handle_submission
 from .handler.submission import InvalidSubmission as _InvalidSubmission
 
@@ -113,6 +116,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
              trust_email_infrastructure=False,
              handlers={
         'get': _handle_get,
+        'grade': _handle_grade,
         'submit': _handle_submission,
         }, respond=None, dry_run=False, **kwargs):
     """Run from procmail to sort incomming submissions
@@ -974,6 +978,12 @@ def _get_error_response(error):
             'We received your submission for {}, but you are not\n'
             'allowed to submit that assignment via email.'
             ).format(error.assignment.name)
+    elif isinstance(error, _MissingGradeMessage):
+        subject = 'No grade in {!r}'.format(error.subject)
+        text = (
+            'Your grade submission did not include a text/plain\n'
+            'part containing the new grade and comment.'
+            )
     elif isinstance(error, InvalidHandlerMessage):
         targets = sorted(error.handlers.keys())
         if not targets:
@@ -1038,7 +1048,16 @@ def _get_error_response(error):
         subject = 'unsigned message {}'.format(error.message['Message-ID'])
         text = (
             'We received an email message from you without a valid\n'
-            'PGP signature.')
+            'PGP signature.'
+            )
+    elif isinstance(error, _PermissionViolationMessage):
+        text = (
+            'We got an email from you with the following subject:\n'
+            '  {!r}\n'
+            "but you can't do that unless you belong to one of the\n"
+            'following groups:\n'
+            '  * {}').format(
+            error.subject, '\n  * '.join(error.allowed_groups))
     elif isinstance(error, _InvalidMessage):
         text = subject
     else:

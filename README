@@ -46,10 +46,12 @@ Usage
 
 Pygrader will help keep you organized in a course where the students
 submit homework via email, or the homework submissions are otherwise
-digital (i.e. scanned in after submission).  There is currently no
-support for multiple graders, although I will likely add this in the
-future.  In the following sections, I'll walk you through
-administering the homework for the ``test`` course.
+digital (i.e. scanned in after submission).  You can also use it to
+assign and `manage any type of grade via email`__.  In the following
+sections, I'll walk you through local administration for the ``test``
+course.
+
+__ `Mailpipe details`_
 
 All of the processing involves using the ``pg.py`` command.  Run::
 
@@ -141,8 +143,8 @@ If a person has the ``pgp-key`` option set, that key will be used to
 encrypt messages to that person and sign messages from that person
 with PGP_.  It will also be used to authenticate ownership of incoming
 emails.  You'll need to have GnuPG_ on your local host for this to
-work, and the user running pygrader should have the associated keys in
-their keychain.
+work, and the user running ``pygrader`` should have the associated
+keys in their keychain.
 
 The ``course.robot`` option defines a dummy person used to sign
 automatically generated emails (e.g. responses to mailpipe-processed
@@ -161,7 +163,7 @@ As the due date approaches, student submissions will start arriving in
 your inbox.  Use ``pg.py``'s ``mailpipe`` command to sort them into
 directories (using the ``pygrader.handler.submission`` handler).  This
 will also extract any files that were attached to the emails and place
-them in that persons assignment directory::
+them in that person's assignment directory::
 
   $ pg.py -d test mailpipe -m maildir -i ~/.maildir -o ./mail-old
 
@@ -192,8 +194,22 @@ all out with ``pg.py``'s ``email`` command::
 Mailpipe details
 ~~~~~~~~~~~~~~~~
 
-Mailpipe is the most complicated part of ``pygrader``, and the place
-where things are most likely to get sticky.  Since there are several
+Besides accepting student submissions from incoming email,
+``mailpipe`` also accepts other types of requests, and can be
+configured to respond automatically:
+
+* Incoming student assignment submissions are archived (see the
+  ``submit`` command).
+* Students can check their grades without having to bother anyone (see
+  the ``get`` commands).
+* Professors and teaching assistants can request student submissions
+  so that they can grade them (see the ``get`` commands).
+* Professors and TAs can request the grades for the entire class (see
+  the ``get`` commands).
+* Professors and TAs can assign grades (see the ``grade`` command).
+
+To enable automatic responses, you'll need to add the ``-r`` or
+``--respond`` argument when you call ``pg.py``.
 
 If you get tired of filtering your inbox by hand using ``pg.py
 mailpipe``, you can (depending on how your mail delivery is setup) use
@@ -232,6 +248,14 @@ targets include (see the ``handlers`` argument to
     [get] don't match any student names
     [get] Bilbo Baggins
     [get] Bilbo Baggins Assignment 1
+
+``grade``
+  professors and TAs can submit a grade for a particular student on a
+  particular assignment.  The body of the (possibly signed or
+  encrypted) email should be identical to the grade file that the
+  sender wishes to create.  An example subject would be::
+
+    [grade] Bilbo Baggins Assignment 1
 
 To allow you to easily sort the email, you can also prefix the target
 with additional information (see

@@ -1,0 +1,19 @@
+Return-Path: <eye@tower.edu>
+Received: from smtp.mail.uu.edu (localhost.localdomain [127.0.0.1])
+  by smtp.mail.uu.edu (Postfix) with SMTP id 68CB45C8453
+  for <phys101@tower.edu>; Sun, 2 Sep 2012 01:04:02 -0400 (EDT)
+Received: from smtp.home.net (smtp.home.net [123.456.123.456])
+  by smtp.mail.uu.edu (Postfix) with ESMTP id 5BA225C83EF
+  for <phys101@tower.edu>; Sun, 2 Sep 2012 01:04:01 -0400 (EDT)
+Date: Sun, 2 Sep 2012 01:04:00 -0400
+From: Saury <eye@tower.edu>
+To: Physics 101 <phys101@tower.edu>
+Subject: [grade] Frodo Baggins - assignment 1
+Message-ID: <20120902010400.AB1234@home.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+10
+
+Very persistent.
