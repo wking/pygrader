@@ -621,7 +621,13 @@ def _load_messages(course, stream, mailbox=None, input_=None, output=None,
             ombox = _mailbox.mbox(output, factory=None, create=True)
     elif mailbox == 'maildir':
         mbox = _mailbox.Maildir(input_, factory=None, create=False)
-        messages = mbox.items()
+        messages = []
+        for key,msg in mbox.items():
+            subpath = mbox._lookup(key)
+            if subpath.endswith('.gitignore'):
+                _LOG.debug('skipping non-message {}'.format(subpath))
+                continue
+            messages.append((key, msg))
         if output is not None:
             ombox = _mailbox.Maildir(output, factory=None, create=True)
     else:
