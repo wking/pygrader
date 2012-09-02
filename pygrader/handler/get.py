@@ -430,7 +430,11 @@ def _get_student_submission_email(
         except _mailbox.NoSuchMailboxError as e:
             pass
         else:
-            for msg in mbox:
+            for key,msg in mbox.items():
+                subpath = mbox._lookup(key)
+                if subpath.endswith('.gitignore'):
+                    _LOG.debug('skipping non-message {}'.format(subpath))
+                    continue
                 message.attach(_MIMEMessage(msg))
     return _construct_email(
         author=course.robot, targets=[person], subject=subject,
