@@ -64,7 +64,9 @@ def load_course(basedir):
     names = {'robot': [config.get('course', 'robot').strip()]}
     for option in ['assignments', 'professors', 'assistants', 'students']:
         names[option] = [
-        a.strip() for a in config.get('course', option).split(',')]
+            a.strip() for a in config.get('course', option).split(',')]
+        while '' in names[option]:
+            names[option].remove('')
     assignments = []
     for assignment in names['assignments']:
         _LOG.debug('loading assignment {}'.format(assignment))
