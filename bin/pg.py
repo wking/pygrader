@@ -55,6 +55,10 @@ if __name__ == '__main__':
         '-d', '--base-dir', dest='basedir', default='.',
         help='Base directory containing grade data')
     parser.add_argument(
+        '-e', '--encoding', dest='encoding',
+        help=('Override the default file encoding selection '
+              '(useful when running from procmail)'))
+    parser.add_argument(
         '-c', '--color', default=False, action='store_const', const=True,
         help='Color printed output with ANSI escape sequences')
     parser.add_argument(
