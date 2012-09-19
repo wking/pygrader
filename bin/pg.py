@@ -24,6 +24,7 @@ from email.mime.text import MIMEText as _MIMEText
 import email.utils as _email_utils
 import inspect as _inspect
 import logging as _logging
+import logging.handlers as _logging_handlers
 import os.path as _os_path
 import sys as _sys
 
@@ -58,6 +59,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '-V', '--verbose', default=0, action='count',
         help='Increase verbosity')
+    parser.add_argument(
+        '-s', '--syslog', default=False, action='store_const', const=True,
+        help='Log to syslog (rather than stderr)')
     subparsers = parser.add_subparsers(title='commands')
 
     smtp_parser = subparsers.add_parser(
@@ -165,6 +169,15 @@ if __name__ == '__main__':
     if args.verbose:
         _LOG.setLevel(max(_logging.DEBUG, _LOG.level - 10*args.verbose))
         _pgp_mime.LOG.setLevel(_LOG.level)
+    if args.syslog:
+        syslog = _logging_handlers.SysLogHandler(address="/dev/log")
+        syslog.setFormatter(_logging.Formatter('%(name)s: %(message)s'))
+        for handler in list(_LOG.handlers):
+            _LOG.removeHandler(handler)
+        _LOG.addHandler(syslog)
+        for handler in list(_pgp_mime.LOG.handlers):
+            _pgp_mime.LOG.removeHandler(handler)
+        _pgp_mime.LOG.addHandler(syslog)
     _color.USE_COLOR = args.color
 
     config = _configparser.ConfigParser()
