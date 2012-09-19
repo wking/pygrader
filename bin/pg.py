@@ -30,8 +30,8 @@ import sys as _sys
 
 import pgp_mime as _pgp_mime
 
+import pygrader as _pygrader
 from pygrader import __version__
-from pygrader import ENCODING as _ENCODING
 from pygrader import LOG as _LOG
 from pygrader import color as _color
 from pygrader.email import test_smtp as _test_smtp
@@ -185,12 +185,12 @@ if __name__ == '__main__':
         _pgp_mime.LOG.addHandler(syslog)
     _color.USE_COLOR = args.color
 
-    _ENCODING = args.encoding
+    _pygrader.ENCODING = args.encoding
 
     config = _configparser.ConfigParser()
     config.read([
             _os_path.expanduser(_os_path.join('~', '.config', 'smtplib.conf')),
-            ], encoding=_ENCODING)
+            ], encoding=_pygrader.ENCODING)
 
     func_args = _inspect.getargspec(args.func).args
     kwargs = {}

@@ -26,8 +26,8 @@ import re as _re
 import sys as _sys
 import time as _time
 
+import pygrader as _pygrader
 from . import LOG as _LOG
-from . import ENCODING as _ENCODING
 from .model.assignment import Assignment as _Assignment
 from .model.course import Course as _Course
 from .model.grade import Grade as _Grade
@@ -58,7 +58,8 @@ def load_course(basedir):
     """
     _LOG.debug('loading course from {}'.format(basedir))
     config = _configparser.ConfigParser()
-    config.read([_os_path.join(basedir, 'course.conf')], encoding=_ENCODING)
+    config.read([_os_path.join(basedir, 'course.conf')],
+                encoding=_pygrader.ENCODING)
     name = config.get('course', 'name')
     names = {'robot': [config.get('course', 'robot').strip()]}
     for option in ['assignments', 'professors', 'assistants', 'students']:
@@ -294,8 +295,8 @@ def load_grade(basedir, assignment, person):
     _LOG.debug('loading {} grade for {}'.format(assignment, person))
     path = assignment_path(basedir, assignment, person)
     gpath = _os_path.join(path, 'grade')
-    g = parse_grade(_io.open(gpath, 'r', encoding=_ENCODING),
-                        assignment, person)
+    g = parse_grade(_io.open(gpath, 'r', encoding=_pygrader.ENCODING),
+                    assignment, person)
     #g.late = _os.stat(gpath).st_mtime > assignment.due
     g.late = _os_path.exists(_os_path.join(path, 'late'))
     npath = _os_path.join(path, 'notified')
@@ -348,7 +349,7 @@ def save_grade(basedir, grade):
     if not _os_path.isdir(path):
         _os.makedirs(path)
     gpath = _os_path.join(path, 'grade')
-    with _io.open(gpath, 'w', encoding=_ENCODING) as f:
+    with _io.open(gpath, 'w', encoding=_pygrader.ENCODING) as f:
         f.write('{}\n'.format(grade.points))
         if grade.comment:
             f.write('\n{}\n'.format(grade.comment.strip()))
