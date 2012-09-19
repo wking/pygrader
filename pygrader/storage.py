@@ -58,7 +58,7 @@ def load_course(basedir):
     """
     _LOG.debug('loading course from {}'.format(basedir))
     config = _configparser.ConfigParser()
-    config.read([_os_path.join(basedir, 'course.conf')])
+    config.read([_os_path.join(basedir, 'course.conf')], encoding=_ENCODING)
     name = config.get('course', 'name')
     names = {'robot': [config.get('course', 'robot').strip()]}
     for option in ['assignments', 'professors', 'assistants', 'students']:
