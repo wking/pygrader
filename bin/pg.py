@@ -31,6 +31,7 @@ import pgp_mime as _pgp_mime
 
 from pygrader import __version__
 from pygrader import LOG as _LOG
+from pygrader import color as _color
 from pygrader.email import test_smtp as _test_smtp
 from pygrader.email import Responder as _Responder
 from pygrader.mailpipe import mailpipe as _mailpipe
@@ -164,6 +165,7 @@ if __name__ == '__main__':
     if args.verbose:
         _LOG.setLevel(max(_logging.DEBUG, _LOG.level - 10*args.verbose))
         _pgp_mime.LOG.setLevel(_LOG.level)
+    _color.USE_COLOR = args.color
 
     config = _configparser.ConfigParser()
     config.read([
