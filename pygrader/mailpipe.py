@@ -995,7 +995,7 @@ def _get_error_response(error):
                 'Perhaps you meant to use one of the following:\n'
                 '  {}').format('\n  '.join(targets))
         text = (
-            'We got an email from you with the following subject:\n'
+            'We received an email from you with the following subject:\n'
             '  {!r}\n'
             'which does not match any submittable handler name for\n'
             '{}.\n'
@@ -1031,11 +1031,11 @@ def _get_error_response(error):
                 'subject.  For example:\n'
                 '  {} submission').format(assignments[0].name)
         text = (
-            'We got an email from you with the following subject:\n'
+            'We received an email from you with the following subject:\n'
             '  {!r}\n{}').format(error.subject, hint)
     elif isinstance(error, _InvalidStudentSubject):
         text = (
-            'We got an email from you with the following subject:\n'
+            'We received an email from you with the following subject:\n'
             '  {!r}\n'
             'but it matches several students:\n'
             '  * {}').format(
@@ -1052,7 +1052,7 @@ def _get_error_response(error):
             )
     elif isinstance(error, _PermissionViolationMessage):
         text = (
-            'We got an email from you with the following subject:\n'
+            'We received an email from you with the following subject:\n'
             '  {!r}\n'
             "but you can't do that unless you belong to one of the\n"
             'following groups:\n'
