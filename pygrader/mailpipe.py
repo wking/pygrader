@@ -26,6 +26,7 @@ import re as _re
 import sys as _sys
 
 import pgp_mime as _pgp_mime
+import pgp_mime.key as _pgp_mime_key
 
 from . import LOG as _LOG
 from .email import construct_email as _construct_email
@@ -76,13 +77,14 @@ class AmbiguousAddress (_InvalidMessage):
 
 
 class WrongSignatureMessage (_InsecureMessage):
-    def __init__(self, pgp_key=None, signatures=None, decrypted=None,
-                 **kwargs):
+    def __init__(self, pgp_key=None, signatures=None, fingerprints=None,
+                 decrypted=None, **kwargs):
         if 'error' not in kwargs:
             kwargs['error'] = 'not signed by the expected key'
         super(WrongSignatureMessage, self).__init__(**kwargs)
         self.pgp_key = pgp_key
         self.signatures = signatures
+        self.fingerprints = fingerprints
         self.decrypted = decrypted
 
 
@@ -939,11 +941,22 @@ def _get_verified_message(message, pgp_key):
     for signature in signatures:
         _LOG.debug(signature.dumps())
     match = None
-    matches = [s for s in signatures if s.fingerprint.endswith(pgp_key)]
+    fingerprints = dict((s.fingerprint, s) for s in signatures)
+    for s in signatures:
+        for key in _pgp_mime_key.lookup_keys([s.fingerprint]):
+            if key.fingerprint != s.fingerprint:
+                # the signature was made with a subkey.  Add the primary.
+                fingerprints[key.fingerprint] = s
+    if pgp_key.startswith('0x'):
+        key_tail = pgp_key[len('0x'):]
+    else:
+        key_tail = pgp_key
+    matches = [fingerprints[f] for f in fingerprints.keys()
+               if f.endswith(key_tail)]
     if len(matches) == 0:
         raise WrongSignatureMessage(
             message=message, pgp_key=pgp_key, signatures=signatures,
-            decrypted=decrypted)
+            fingerprints=fingerprints, decrypted=decrypted)
     signature = matches[0]
     if not verified:
         if signature.get_summary() != 0:
