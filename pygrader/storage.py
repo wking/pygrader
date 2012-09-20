@@ -288,10 +288,11 @@ def load_grades(basedir, assignments, people):
     "Load all grades in a course directory."
     for assignment in assignments:
         for person in people:
-            try:
-                yield load_grade(basedir, assignment, person)
-            except IOError:
-                continue
+            if 'students' in person.groups:
+                try:
+                    yield load_grade(basedir, assignment, person)
+                except IOError:
+                    continue
 
 def load_grade(basedir, assignment, person):
     "Load a single grade from a course directory."
