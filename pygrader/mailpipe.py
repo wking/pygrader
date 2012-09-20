@@ -1041,9 +1041,25 @@ def _get_error_response(error):
     elif isinstance(error, _UnsignedMessage):
         subject = 'unsigned message {}'.format(error.message['Message-ID'])
         text = (
-            'We received an email message from you without a valid\n'
-            'PGP signature.'
+            'We received an email message from you without a PGP\n'
+            'signature.'
             )
+    elif isinstance(error, WrongSignatureMessage):
+        lines = [
+            'We received an email message from you without a valid',
+            'PGP signature.  We were expecting a signature by',
+            '{}, but got signatures by:'.format(error.person.pgp_key),
+            ]
+        lines.extend(['  {}'.format(s.fingerprint) for s in error.signatures])
+        text = '\n'.join(lines)
+    elif isinstance(error, UnverifiedSignatureMessage):
+        text = (
+            'We received an email message from you with an unverified\n'
+            'signature:\n\n'
+            '{}\n\n'
+            'If this is the key you intended to use, contact your\n'
+            'professor or TA.'
+            ).format(error.signature.dumps(prefix='  '))
     elif isinstance(error, _PermissionViolationMessage):
         text = (
             'We received an email from you with the following subject:\n'
@@ -1053,7 +1069,11 @@ def _get_error_response(error):
             '  * {}').format(
             error.subject, '\n  * '.join(error.allowed_groups))
     elif isinstance(error, _InvalidMessage):
-        text = subject
+        text = (
+            'We received an email from you with the following subject:\n'
+            '  {!r}\n'
+            'but the message was invalid:\n'
+            '  {}').format(error.subject, error)
     else:
         raise NotImplementedError((type(error), error))
     if target is None:
