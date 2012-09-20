@@ -959,7 +959,11 @@ def _get_verified_message(message, pgp_key):
             fingerprints=fingerprints, decrypted=decrypted)
     signature = matches[0]
     if not verified:
-        if signature.get_summary() != 0:
+        problems = [k for k,v in signature.summary.items() if v]
+        for good in ['green', 'valid']:
+            if good in problems:
+                problems.remove(good)
+        if problems:
             raise UnverifiedSignatureMessage(
                 message=message, signature=signature, decrypted=decrypted)
         # otherwise, we may have an untrusted key.  We'll count that
