@@ -26,7 +26,6 @@ import re as _re
 import sys as _sys
 
 import pgp_mime as _pgp_mime
-from lxml import etree as _etree
 
 from . import LOG as _LOG
 from .email import construct_email as _construct_email
@@ -77,14 +76,15 @@ class AmbiguousAddress (_InvalidMessage):
 
 
 class WrongSignatureMessage (_InsecureMessage):
-    def __init__(self, pgp_key=None, fingerprints=None, decrypted=None,
+    def __init__(self, pgp_key=None, signatures=None, decrypted=None,
                  **kwargs):
         if 'error' not in kwargs:
             kwargs['error'] = 'not signed by the expected key'
         super(WrongSignatureMessage, self).__init__(**kwargs)
         self.pgp_key = pgp_key
-        self.fingerprints = fingerprints
+        self.signatures = signatures
         self.decrypted = decrypted
+
 
 class UnverifiedSignatureMessage (_InsecureMessage):
     def __init__(self, signature=None, decrypted=None, **kwargs):
@@ -933,26 +933,20 @@ def _get_verified_message(message, pgp_key):
     """
     mid = message['message-id']
     try:
-        decrypted,verified,result = _pgp_mime.verify(message=message)
+        decrypted,verified,signatures = _pgp_mime.verify(message=message)
     except (ValueError, AssertionError) as error:
         raise _UnsignedMessage(message=message) from error
-    _LOG.debug(str(result, 'utf-8'))
-    tree = _etree.fromstring(result.replace(b'\x00', b''))
+    for signature in signatures:
+        _LOG.debug(signature.dumps())
     match = None
-    fingerprints = []
-    for signature in tree.findall('.//signature'):
-        for fingerprint in signature.iterchildren('fpr'):
-            fingerprints.append(fingerprint)
-    matches = [f for f in fingerprints if f.text.endswith(pgp_key)]
+    matches = [s for s in signatures if s.fingerprint.endswith(pgp_key)]
     if len(matches) == 0:
         raise WrongSignatureMessage(
-            message=message, pgp_key=pgp_key, fingerprints=fingerprints,
+            message=message, pgp_key=pgp_key, signatures=signatures,
             decrypted=decrypted)
-    match = matches[0]
+    signature = matches[0]
     if not verified:
-        sumhex = list(signature.iterchildren('summary'))[0].get('value')
-        summary = int(sumhex, 16)
-        if summary != 0:
+        if signature.get_summary() != 0:
             raise UnverifiedSignatureMessage(
                 message=message, signature=signature, decrypted=decrypted)
         # otherwise, we may have an untrusted key.  We'll count that
