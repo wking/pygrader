@@ -23,7 +23,7 @@ __version__ = '0.3'
 ENCODING = 'utf-8'
 
 
-LOG = _logging.getLogger('pygrade')
+LOG = _logging.getLogger('pygrader')
 LOG.setLevel(_logging.ERROR)
 LOG.addHandler(_logging.StreamHandler())
 LOG_FORMATTER = _ColoredFormatter()
