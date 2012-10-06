@@ -179,9 +179,9 @@ def run(basedir, course, message, person, subject,
             hasattr(message, 'authenticated') and message.authenticated)
     if not authenticated:
         raise _UnsignedMessage()
-    if not ('professors' in person.groups or 'assistants' in person.groups):
+    if not person.is_admin():
         raise _PermissionViolationMessage(
-            person=person, allowed_groups=['professors', 'assistants'])
+            person=person, allowed_groups=person.admin_groups)
     student = _get_subject_student(course=course, subject=subject)
     assignment = _get_subject_assignment(course=course, subject=subject)
     grade = _get_grade(

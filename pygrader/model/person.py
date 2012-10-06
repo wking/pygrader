@@ -15,6 +15,8 @@
 # pygrader.  If not, see <http://www.gnu.org/licenses/>.
 
 class Person (object):
+    admin_groups = ['professors', 'assistants']
+
     def __init__(self, name, emails=None, pgp_key=None, aliases=None,
                  groups=None):
         self.name = name
@@ -42,3 +44,11 @@ class Person (object):
             return self.aliases[0]
         except KeyError:
             return self.name
+
+    def is_admin(self):
+        """Is this person an administrator for this course? True/False.
+        """
+        for group in self.admin_groups:
+            if group in self.groups:
+                return True
+        return False

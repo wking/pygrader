@@ -373,7 +373,7 @@ def run(basedir, course, message, person, subject,
             hasattr(message, 'authenticated') and message.authenticated)
     if not authenticated:
         raise _UnsignedMessage()
-    if 'assistants' in person.groups or 'professors' in person.groups:
+    if person.is_admin():
         email = _get_admin_email(
             basedir=basedir, course=course, person=person, subject=subject)
     elif 'students' in person.groups:
