@@ -944,9 +944,9 @@ def _get_verified_message(message, pgp_key):
     fingerprints = dict((s.fingerprint, s) for s in signatures)
     for s in signatures:
         for key in _pgp_mime_key.lookup_keys([s.fingerprint]):
-            if key.fingerprint != s.fingerprint:
+            if key.subkeys[0].fingerprint != s.fingerprint:
                 # the signature was made with a subkey.  Add the primary.
-                fingerprints[key.fingerprint] = s
+                fingerprints[key.subkeys[0].fingerprint] = s
     if pgp_key.startswith('0x'):
         key_tail = pgp_key[len('0x'):]
     else:
