@@ -21,6 +21,7 @@ from __future__ import absolute_import
 from email import message_from_file as _message_from_file
 from email.header import decode_header as _decode_header
 from email.mime.text import MIMEText as _MIMEText
+from email.utils import parseaddr as _parseaddr
 import mailbox as _mailbox
 import re as _re
 import sys as _sys
@@ -796,8 +797,47 @@ def _parse_message(course, message, trust_email_infrastructure=False):
         raise
     return (original, message, person, subject, target)
 
-def _get_message_person(course, message):
-    sender = message['Return-Path']  # RFC 822
+def _get_message_person(course, message, trust_admin_from=True):
+    """Get the `Person` that sent the message.
+
+    We use 'Return-Path' (envelope from) instead of the message's From
+    header, because it's more consistent and harder to fake.  However,
+    there may be times when you *want* to send a message in somebody
+    elses name.
+
+    For example, if a student submitted an assignment from an
+    unexpected address, you might add that address to their entry in
+    your course config, and then bounce the message back into
+    pygrader.  In this case, the From header will still be the
+    student, but the 'Return-Path' will be you.  With
+    `trust_admin_from` (on by default), messages who's 'Return-Path'
+    matches a professor or TA will have their 'From' line used to find
+    the final person responsible for the message.
+
+    >>> from pygrader.model.course import Course
+    >>> from pygrader.model.person import Person
+    >>> from pgp_mime import encodedMIMEText
+
+    >>> course = Course(people=[
+    ...     Person(
+    ...         name='Gandalf', emails=['g@grey.edu'], groups=['professors']),
+    ...     Person(name='Bilbo', emails=['bb@shire.org']),
+    ...     ])
+    >>> message = encodedMIMEText('testing')
+    >>> message['Return-Path'] = '<g@grey.edu>'
+    >>> message['From'] = 'Bill <bb@shire.org>'
+    >>> message['Message-ID'] = '<123.456@home.net>'
+
+    >>> person = _get_message_person(course=course, message=message)
+    >>> print(person)
+    <Person Bilbo>
+
+    >>> person = _get_message_person(
+    ...     course=course, message=message, trust_admin_from=False)
+    >>> print(person)
+    <Person Gandalf>
+    """
+    sender = message['return-path']  # RFC 822
     if sender is None:
         raise NoReturnPath(message)
     sender = sender[1:-1]  # strip wrapping '<' and '>'
@@ -806,7 +846,26 @@ def _get_message_person(course, message):
         raise UnregisteredAddress(message=message, address=sender)
     if len(people) > 1:
         raise AmbiguousAddress(message=message, address=sender, people=people)
-    return people[0]
+    person = people[0]
+    if trust_admin_from and person.is_admin():
+        mid = message['message-id']
+        from_headers = message.get_all('from')
+        if len(from_headers) == 0:
+            _LOG.debug("no 'From' headers in {}".format(mid))
+        elif len(from_headers) > 1:
+            _LOG.debug("multiple 'From' headers in {}".format(mid))
+        else:
+            name,address = _parseaddr(from_headers[0])
+            people = list(course.find_people(email=address))
+            if len(people) == 0:
+                _LOG.debug("'From' address {} is unregistered".format(address))
+            if len(people) > 1:
+                _LOG.debug("'From' address {} is ambiguous".format(address))
+            _LOG.debug('message from {} treated as being from {}'.format(
+                    person, people[0]))
+            person = people[0]
+    _LOG.debug('message from {}'.format(person))
+    return person
 
 def _get_message_subject(message):
     """
