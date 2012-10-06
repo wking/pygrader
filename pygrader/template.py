@@ -108,16 +108,14 @@ def join_with_and(strings):
     return ''.join(ret)
 
 def assignment_email(basedir, author, course, assignment, student=None,
-                     cc=None, smtp=None, use_color=False, debug_target=None,
-                     dry_run=False):
+                     cc=None, smtp=None, debug_target=None, dry_run=False):
     """Send each student an email with their grade on `assignment`
     """
     _send_emails(
         emails=_assignment_email(
             basedir=basedir, author=author, course=course,
             assignment=assignment, student=student, cc=cc),
-        smtp=smtp, use_color=use_color,
-        debug_target=debug_target, dry_run=dry_run)
+        smtp=smtp, debug_target=debug_target, dry_run=dry_run)
 
 def _assignment_email(basedir, author, course, assignment, student=None,
                       cc=None):
@@ -194,16 +192,14 @@ def construct_assignment_email(author, grade, cc=None):
         text=ASSIGNMENT_TEMPLATE.render(author=author, grade=grade))
 
 def student_email(basedir, author, course, student=None, cc=None, old=False,
-                  smtp=None, use_color=False, debug_target=None,
-                  dry_run=False):
+                  smtp=None, debug_target=None, dry_run=False):
     """Send each student an email with their grade to date
     """
     _send_emails(
         emails=_student_email(
             basedir=basedir, author=author, course=course, student=student,
             cc=cc, old=old),
-        smtp=smtp, use_color=use_color, debug_target=debug_target,
-        dry_run=dry_run)
+        smtp=smtp, debug_target=debug_target, dry_run=dry_run)
 
 def _student_email(basedir, author, course, student=None, targets=None, cc=None, old=False):
     """Iterate through composed student `Message`\s
@@ -378,16 +374,15 @@ def construct_student_email(author, course, grades, targets=None, cc=None):
             author=author, target=target, grades=sorted(grades)))
 
 def course_email(basedir, author, course, targets, assignment=None,
-                 student=None, cc=None, smtp=None, use_color=False,
-                 debug_target=None, dry_run=False):
+                 student=None, cc=None, smtp=None, debug_target=None,
+                 dry_run=False):
     """Send the professor an email with all student grades to date
     """
     _send_emails(
         emails=_course_email(
             basedir=basedir, author=author, course=course, targets=targets,
             assignment=assignment, student=student, cc=cc),
-        smtp=smtp, use_color=use_color, debug_target=debug_target,
-        dry_run=dry_run)
+        smtp=smtp, debug_target=debug_target, dry_run=dry_run)
 
 def _course_email(basedir, author, course, targets, assignment=None,
                   student=None, cc=None):
