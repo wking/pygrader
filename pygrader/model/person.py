@@ -18,11 +18,15 @@ class Person (object):
     def __init__(self, name, emails=None, pgp_key=None, aliases=None,
                  groups=None):
         self.name = name
+        if emails is None:
+            emails = []
         self.emails = emails
         self.pgp_key = pgp_key
         if not aliases:
             aliases = [self.name]
         self.aliases = aliases
+        if groups is None:
+            groups = []
         self.groups = groups
 
     def __str__(self):

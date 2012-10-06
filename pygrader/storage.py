@@ -269,7 +269,7 @@ def load_person(name, data={}):
     Gandalf: ['g@grey.edu', 'g@greyhavens.net'] | 0x0123456789ABCDEF
     >>> p = load_person(name='Gandalf')
     >>> print('{0.name}: {0.emails} | {0.pgp_key}'.format(p))
-    Gandalf: None | None
+    Gandalf: [] | None
     """
     kwargs = {}
     emails = [x.strip() for x in data.get('emails', '').split(',')]
