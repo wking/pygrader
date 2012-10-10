@@ -49,8 +49,10 @@ from pygrader.todo import print_todo as _todo
 if __name__ == '__main__':
     from argparse import ArgumentParser as _ArgumentParser
 
-    parser = _ArgumentParser(
-        description=__doc__, version=__version__)
+    parser = _ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '-v', '--version', action='version',
+        version='%(prog)s {}'.format(_pgp_mime.__version__))
     parser.add_argument(
         '-d', '--base-dir', dest='basedir', default='.',
         help='Base directory containing grade data')
