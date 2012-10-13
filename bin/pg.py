@@ -159,6 +159,11 @@ if __name__ == '__main__':
         default=False, action='store_const', const=True,
         help=('Send automatic response emails even if the target has not '
               'registered a PGP key.'))
+    mailpipe_parser.add_argument(
+        '-c', '--continue-after-invalid-message',
+        default=False, action='store_const', const=True,
+        help=('Send responses to invalid messages and continue processing '
+              'further emails (default is to die with an error message).'))
 
     todo_parser = subparsers.add_parser(
         'todo', help=_todo.__doc__.splitlines()[0])
@@ -227,7 +232,8 @@ if __name__ == '__main__':
                     else:
                         kwargs[attr].extend(course.find_people(name=person))
         for attr in ['dry_run', 'mailbox', 'output', 'input_', 'max_late',
-                     'old', 'statistics', 'trust_email_infrastructure']:
+                     'old', 'statistics', 'trust_email_infrastructure',
+                     'continue_after_invalid_message']:
             if hasattr(args, attr):
                 kwargs[attr] = getattr(args, attr)
     elif args.func == _test_smtp:
@@ -238,9 +244,6 @@ if __name__ == '__main__':
         for attr in ['source', 'target']:
             if hasattr(args, attr):
                 kwargs[attr] = getattr(args, attr)
-
-    if args.func == _mailpipe:
-        kwargs['continue_after_invalid_message'] = True
 
     if 'use_color' in func_args:
         kwargs['use_color'] = args.color
