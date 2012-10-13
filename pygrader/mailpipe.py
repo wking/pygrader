@@ -1095,7 +1095,7 @@ def _get_error_response(error):
             # prefer a submittable example assignment
             assignments = [
                 a for a in error.course.assignments if a.submittable]
-            assignments += course.assignments  # but fall back to any one
+            assignments += error.course.assignments  # but fall back to any one
             hint = (
                 'Remember to use the full name for the assignment in the\n'
                 'subject.  For example:\n'
