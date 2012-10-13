@@ -88,7 +88,7 @@ class InvalidAssignmentSubject (InvalidSubjectMessage):
                 kwargs['error'] = 'Subject matches multiple assignments'
             else:
                 kwargs['error'] = "Subject doesn't match any assignment"
-        super(InvalidAssignmentSubject, self).__init__(kwargs)
+        super(InvalidAssignmentSubject, self).__init__(**kwargs)
         self.assignments = assignments
 
 
