@@ -29,6 +29,7 @@ distribution, you'll need the following dependencies:
 ========   =====================  ================  =========================
 Package    Purpose                Debian_           Gentoo_
 ========   =====================  ================  =========================
+Jinja_     email templating       python-jinja2     dev-python/jinja
 pgp-mime_  secure email                             dev-python/pgp-mime [#pm]
 nose_      testing (optional)     python-nose       dev-python/nose
 NumPy_     statistics (optional)  python-numpy      dev-python/numpy
@@ -321,8 +322,9 @@ using graphical interfaces.
 .. _wtk overlay: http://blog.tremily.us/posts/Gentoo_overlay/
 .. _Debian: http://www.debian.org/
 .. _Gentoo: http://www.gentoo.org/
-.. _NumPy: http://numpy.scipy.org/
+.. _Jinja: http://jinja.pocoo.org/
 .. _pgp-mime: http://blog.tremily.us/posts/pgp-mime/
+.. _NumPy: http://numpy.scipy.org/
 .. _update-copyright: http://blog.tremily.us/posts/update-copyright/
 .. _Git: http://git-scm.com/
 .. _homepage: http://blog.tremily.us/posts/pygrader/
