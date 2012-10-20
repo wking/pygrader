@@ -26,13 +26,16 @@ Dependencies
 If you're installing by hand or packaging pycomedi for another
 distribution, you'll need the following dependencies:
 
-========   ===================  ================  =========================
-Package    Purpose              Debian_           Gentoo_
-========   ===================  ================  =========================
-NumPy_     statistics           python-numpy      dev-python/numpy
-pgp-mime_  secure email                           dev-python/pgp-mime [#pm]
-nose_      testing (optional)   python-nose       dev-python/nose
-=========  ===================  ================  =========================
+========   =====================  ================  =========================
+Package    Purpose                Debian_           Gentoo_
+========   =====================  ================  =========================
+pgp-mime_  secure email                             dev-python/pgp-mime [#pm]
+nose_      testing (optional)     python-nose       dev-python/nose
+NumPy_     statistics (optional)  python-numpy      dev-python/numpy
+=========  =====================  ================  =========================
+
+If NumPy is not installed, we'll fall back to internal implementations
+of the various statistical calculations.
 
 If you are developing ``pygrader``, you can use `update-copyright`_ to
 keep the copyright blurbs up to date.
