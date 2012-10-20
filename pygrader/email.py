@@ -114,46 +114,28 @@ class Responder (object):
         send_emails([(message, None)], *self.args, **self.kwargs)
 
 
-def get_address(person, header=False):
+def get_address(person):
     r"""
     >>> from pygrader.model.person import Person as Person
     >>> p = Person(name='Jack', emails=['a@b.net'])
     >>> get_address(p)
     'Jack <a@b.net>'
 
-    Here's a simple unicode example.
+    Here's a simple unicode example.  The name portion of the address
+    is encoded following RFC 2047.
 
     >>> p.name = '✉'
     >>> get_address(p)
-    '✉ <a@b.net>'
-
-    When you encode addresses that you intend to place in an email
-    header, you should set the `header` option to `True`.  This
-    encodes the name portion of the address without encoding the email
-    portion.
-
-    >>> get_address(p, header=True)
     '=?utf-8?b?4pyJ?= <a@b.net>'
 
-    Note that the address is in the clear.  Without the `header`
-    option you'd have to rely on something like:
-
-    >>> from email.header import Header
-    >>> Header(get_address(p), 'utf-8').encode()
-    '=?utf-8?b?4pyJIDxhQGIubmV0Pg==?='
-
-    This can cause trouble when your mailer tries to decode the name
-    following :RFC:`2822`, which limits the locations in which encoded
-    words may appear.
+    Note that the address is in the clear.  Otherwise you can have
+    trouble when your mailer tries to decode the name following
+    :RFC:`2822`, which limits the locations in which encoded words may
+    appear.
     """
-    if header:
-        encoding = _pgp_mime.guess_encoding(person.name)
-        if encoding == 'us-ascii':
-            name = person.name
-        else:
-            name = _Header(person.name, encoding).encode()
-        return _email_utils.formataddr((name, person.emails[0]))
-    return _email_utils.formataddr((person.name, person.emails[0]))
+    encoding = _pgp_mime.guess_encoding(person.name)
+    return _email_utils.formataddr(
+        (person.name, person.emails[0]), charset=encoding)
 
 def construct_email(author, targets, subject, message, cc=None):
     if author.pgp_key:
@@ -186,13 +168,13 @@ def construct_email(author, targets, subject, message, cc=None):
         message = _pgp_mime.encrypt(message=message, recipients=recipients)
 
     message['Date'] = _email_utils.formatdate()
-    message['From'] = get_address(author, header=True)
+    message['From'] = get_address(author)
     message['Reply-to'] = message['From']
     message['To'] = ', '.join(
-        get_address(target, header=True) for target in targets)
+        get_address(target) for target in targets)
     if cc:
         message['Cc'] = ', '.join(
-            get_address(target, header=True) for target in cc)
+            get_address(target) for target in cc)
     subject_encoding = _pgp_mime.guess_encoding(subject)
     if subject_encoding == 'us-ascii':
         message['Subject'] = subject
