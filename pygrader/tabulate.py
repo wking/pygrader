@@ -69,7 +69,7 @@ def _statistic(iterable, statistic):
             return gs.mean()
     elif statistic == 'Std. Dev.':
         if _numpy is None:  # work around missing numpy
-            sval = _std(iterable)
+            return _std(iterable)
         else:
             return gs.std()
     else:
