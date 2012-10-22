@@ -62,18 +62,18 @@ def _statistic(iterabale, statistic):
         _LOG.warning('error importing numpy, falling back to workarounds')
         _LOG.warning(str(_numpy_import_error))
         _numpy_import_error = None
-    if stat == 'Mean':
+    if statistic == 'Mean':
         if _numpy is None:  # work around missing numpy
             return _mean(iterable)
         else:
             return gs.mean()
-    elif stat == 'Std. Dev.':
+    elif statistic == 'Std. Dev.':
         if _numpy is None:  # work around missing numpy
             sval = _std(iterable)
         else:
             return gs.std()
     else:
-        raise NotImplementedError(stat)
+        raise NotImplementedError(statistic)
 
 def tabulate(course, statistics=False, stream=None, use_color=None, **kwargs):
     """Return a table of student's grades to date
