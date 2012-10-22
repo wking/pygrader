@@ -882,7 +882,7 @@ def _get_message_subject(message):
     >>> subject.append('-ascii part', 'ascii')
     >>> message['Subject'] = subject.encode()
     >>> _get_message_subject(message=message)
-    'unicode part-ascii part'
+    'unicode part -ascii part'
     >>> del message['Subject']
     >>> message['Subject'] = 'clean subject'
     >>> _get_message_subject(message=message)
