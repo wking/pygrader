@@ -183,7 +183,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> message['Return-Path'] = '<invalid.return.path@home.net>'
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/signed; ...protocol="application/pgp-signature"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...
@@ -248,7 +248,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> message['Return-Path'] = '<bb@greyhavens.net>'
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/signed; ...protocol="application/pgp-signature"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...
@@ -314,7 +314,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     ...     'for <wking@tremily.us>; Mon, 09 Oct 2011 11:50:46 -0400 (EDT)')
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/signed; ...protocol="application/pgp-signature"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...
@@ -381,7 +381,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> message['Message-ID'] = '<hgi.jlk@home.net>'
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/signed; ...protocol="application/pgp-signature"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...
@@ -423,7 +423,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> message['Subject'] = '[submit] attendance 1'
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/signed; ...protocol="application/pgp-signature"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...
@@ -488,7 +488,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> message['Subject'] = 'need help for the first homework'
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/signed; ...protocol="application/pgp-signature"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...
@@ -552,7 +552,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> del message['Subject']
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/signed; ...protocol="application/pgp-signature"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...
@@ -616,7 +616,7 @@ def mailpipe(basedir, course, stream=None, mailbox=None, input_=None,
     >>> del message['Subject']
     >>> process(message)  # doctest: +REPORT_UDIFF, +ELLIPSIS
     respond with:
-    Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/encrypted; ...protocol="application/pgp-encrypted"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...

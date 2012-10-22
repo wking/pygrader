@@ -96,7 +96,7 @@ def run(basedir, course, message, person, subject,
     ...     person=person, subject='[grade] {}, {}'.format(student.name, assignment.name))
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/signed; ...protocol="application/pgp-signature"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...
@@ -137,7 +137,7 @@ def run(basedir, course, message, person, subject,
     ...     person=person, subject='[grade] {}, {}'.format(student.name, assignment.name))
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     respond with:
-    Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="===============...=="
+    Content-Type: multipart/signed; ...protocol="application/pgp-signature"; ...boundary="===============...=="
     MIME-Version: 1.0
     Content-Disposition: inline
     Date: ...
