@@ -53,7 +53,7 @@ if _numpy is None:
 else:
     _statistics_container = _numpy.array
 
-def _statistic(iterabale, statistic):
+def _statistic(iterable, statistic):
     """Calculate statistics on an list of numbers
     """
     global _numpy_import_error
