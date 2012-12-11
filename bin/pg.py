@@ -178,6 +178,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    if not hasattr(args, 'func'):
+        # no command selected; print help and die
+        parser.print_help()
+        _sys.exit(0)
+
     if args.verbose:
         _LOG.setLevel(max(_logging.DEBUG, _LOG.level - 10*args.verbose))
         _pgp_mime.LOG.setLevel(_LOG.level)
