@@ -1,0 +1,9 @@
+[submodule "dep/src/pyassuan"]
+	path = dep/src/pyassuan
+	url = ../pyassuan.git
+[submodule "dep/src/pgp-mime"]
+	path = dep/src/pgp-mime
+	url = ../pgp-mime.git
+[submodule "dep/src/jinja2"]
+	path = dep/src/jinja2
+	url = ../jinja2.git
