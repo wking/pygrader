@@ -55,6 +55,36 @@ standard::
 
   $ python setup.py install
 
+Submodules
+----------
+
+pgp-mime_ depends on pyassuan_, which requires Python 3.3.  If your
+distribution doesn't package Jinja_ or ``pgp-mime`` for Python 3.3,
+you can use ``pygrader``'s Git submodules to easily fetch compatible
+versions.  The submodules are stored in the ``dep/src`` directory with
+symbolic links in ``dep`` itself.  For example, the ``pgp-mime``
+submodule is kept in ``dep/src/pgp-mime`` with the symlink
+``dep/pgp_mime`` pointing to ``dep/pgp-mime/pgp_mime``.  If you only
+need a few submodules, you can initialize them explicitly::
+
+  $ git submodule init pgp-mime pyassuan
+
+If you want all of the submodules, use::
+
+  $ git submodule init
+
+Git submodule will fetch (when necessary) and unpack the gitlinked
+commit of initialized submodules with::
+
+  $ git submodule update
+
+You'll want to run ``update`` again after any superproject (in this
+case, ``pygrader``) action that updates the gitlinks.  Once you have
+checked out the dependencies you need, point ``PYTHONPATH`` to the
+``dep`` directory whenever you run ``pygrader``.  For example::
+
+  $ PYTHONPATH=dep ./bin/pg.py ...
+
 Usage
 =====
 
@@ -324,6 +354,7 @@ using graphical interfaces.
 .. _Gentoo: http://www.gentoo.org/
 .. _Jinja: http://jinja.pocoo.org/
 .. _pgp-mime: http://blog.tremily.us/posts/pgp-mime/
+.. _pyassuan: http://blog.tremily.us/posts/pyassuan/
 .. _NumPy: http://numpy.scipy.org/
 .. _update-copyright: http://blog.tremily.us/posts/update-copyright/
 .. _Git: http://git-scm.com/
