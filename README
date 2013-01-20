@@ -23,7 +23,7 @@ my `wtk overlay`_.  Install with::
 Dependencies
 ------------
 
-If you're installing by hand or packaging pycomedi for another
+If you're installing by hand or packaging ``pygrader`` for another
 distribution, you'll need the following dependencies:
 
 ========   =====================  ================  =========================
