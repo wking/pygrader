@@ -26,9 +26,9 @@ Dependencies
 If you're installing by hand or packaging ``pygrader`` for another
 distribution, you'll need the following dependencies:
 
-========   =====================  ================  =========================
+=========  =====================  ================  =========================
 Package    Purpose                Debian_           Gentoo_
-========   =====================  ================  =========================
+=========  =====================  ================  =========================
 Jinja_     email templating       python-jinja2     dev-python/jinja
 pgp-mime_  secure email                             dev-python/pgp-mime [#pm]
 nose_      testing (optional)     python-nose       dev-python/nose
